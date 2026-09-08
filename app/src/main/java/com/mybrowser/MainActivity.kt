@@ -23,8 +23,8 @@ class MainActivity : Activity() {
         val goButton: Button = findViewById(R.id.goButton)
         val backButton: Button = findViewById(R.id.backButton)
         val forwardButton: Button = findViewById(R.id.forwardButton)
-        val refreshButton: Button = findViewById(R.id.refreshButton)
         val homeButton: Button = findViewById(R.id.homeButton)
+        val refreshButton: Button = findViewById(R.id.refreshButton)
 
         webView.settings.javaScriptEnabled = true
         webView.settings.domStorageEnabled = true
@@ -54,15 +54,16 @@ class MainActivity : Activity() {
             }
         }
 
+        homeButton.setOnClickListener {
+            webView.loadUrl("https://www.google.com")
+        }
+
         refreshButton.setOnClickListener {
             webView.reload()
         }
     }
-        homeButton.setOnClickListener {
-    webView.loadUrl("https://www.google.com")
-      }
-   }
-    private fun openWebsite() 
+
+    private fun openWebsite() {
 
         var address = urlBar.text.toString().trim()
 
@@ -80,6 +81,7 @@ class MainActivity : Activity() {
         webView.loadUrl(address)
     }
 
+    @Suppress("DEPRECATION")
     override fun onBackPressed() {
 
         if (webView.canGoBack()) {
