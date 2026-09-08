@@ -1,7 +1,7 @@
 package com.mybrowser
 
-import android.content.Intent
 import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -63,12 +63,12 @@ class MainActivity : Activity() {
         refreshButton.setOnClickListener {
             webView.reload()
         }
+
+        tabsButton.setOnClickListener {
+            val intent = Intent(this, TabsActivity::class.java)
+            startActivity(intent)
+        }
     }
-    
-    tabsButton.setOnClickListener {
-    val intent = Intent(this, TabsActivity::class.java)
-    startActivity(intent)
-}
 
     private fun openWebsite() {
 
