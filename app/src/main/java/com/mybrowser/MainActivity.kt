@@ -24,6 +24,7 @@ class MainActivity : Activity() {
         val backButton: Button = findViewById(R.id.backButton)
         val forwardButton: Button = findViewById(R.id.forwardButton)
         val refreshButton: Button = findViewById(R.id.refreshButton)
+        val homeButton: Button = findViewById(R.id.homeButton)
 
         webView.settings.javaScriptEnabled = true
         webView.settings.domStorageEnabled = true
@@ -57,8 +58,11 @@ class MainActivity : Activity() {
             webView.reload()
         }
     }
-
-    private fun openWebsite() {
+        homeButton.setOnClickListener {
+    webView.loadUrl("https://www.google.com")
+      }
+   }
+    private fun openWebsite() 
 
         var address = urlBar.text.toString().trim()
 
