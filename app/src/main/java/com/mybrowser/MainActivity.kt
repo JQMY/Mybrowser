@@ -1,5 +1,6 @@
 package com.mybrowser
 
+import android.content.Intent
 import android.app.Activity
 import android.os.Bundle
 import android.webkit.WebView
@@ -25,6 +26,7 @@ class MainActivity : Activity() {
         val forwardButton: Button = findViewById(R.id.forwardButton)
         val homeButton: Button = findViewById(R.id.homeButton)
         val refreshButton: Button = findViewById(R.id.refreshButton)
+        val tabsButton: Button = findViewById(R.id.tabsButton)
 
         webView.settings.javaScriptEnabled = true
         webView.settings.domStorageEnabled = true
@@ -62,6 +64,11 @@ class MainActivity : Activity() {
             webView.reload()
         }
     }
+    
+    tabsButton.setOnClickListener {
+    val intent = Intent(this, TabsActivity::class.java)
+    startActivity(intent)
+}
 
     private fun openWebsite() {
 
