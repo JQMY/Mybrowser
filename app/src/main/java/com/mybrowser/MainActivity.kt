@@ -52,11 +52,18 @@ class MainActivity : Activity() {
                         view?.title ?: "New Tab"
 
                     urlBar.setText(url)
+
+                    // Save page to browser history
+                    HistoryManager.add(
+                        currentTab.title,
+                        url
+                    )
                 }
             }
         }
 
-        val selectedUrl = intent.getStringExtra("selectedUrl")
+        val selectedUrl =
+            intent.getStringExtra("selectedUrl")
 
         if (selectedUrl != null) {
 
@@ -69,15 +76,18 @@ class MainActivity : Activity() {
             webView.loadUrl(currentTab.url)
         }
 
+        // Go button
         goButton.setOnClickListener {
             openWebsite()
         }
 
+        // Keyboard search / enter
         urlBar.setOnEditorActionListener { _, _, _ ->
             openWebsite()
             true
         }
 
+        // Back
         backButton.setOnClickListener {
 
             if (webView.canGoBack()) {
@@ -85,6 +95,7 @@ class MainActivity : Activity() {
             }
         }
 
+        // Forward
         forwardButton.setOnClickListener {
 
             if (webView.canGoForward()) {
@@ -92,16 +103,21 @@ class MainActivity : Activity() {
             }
         }
 
+        // Home
         homeButton.setOnClickListener {
 
-            webView.loadUrl("https://www.google.com")
+            webView.loadUrl(
+                "https://www.google.com"
+            )
         }
 
+        // Refresh
         refreshButton.setOnClickListener {
 
             webView.reload()
         }
 
+        // Tabs
         tabsButton.setOnClickListener {
 
             val intent =
