@@ -2,8 +2,8 @@ package com.mybrowser
 
 import android.app.Activity
 import android.content.Intent
-import android.os.Bundle
 import android.graphics.Color
+import android.os.Bundle
 import android.view.Gravity
 import android.widget.Button
 import android.widget.LinearLayout
@@ -11,7 +11,6 @@ import android.widget.TextView
 
 class TabsActivity : Activity() {
 
-    private val tabs = mutableListOf<BrowserTab>()
     private lateinit var tabContainer: LinearLayout
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -23,27 +22,13 @@ class TabsActivity : Activity() {
 
         val newTabButton: Button = findViewById(R.id.newTabButton)
 
-        if (tabs.isEmpty()) {
-            tabs.add(
-                BrowserTab(
-                    "Google",
-                    "https://www.google.com"
-                )
-            )
-        }
+        TabManager.initialize()
 
         displayTabs()
 
         newTabButton.setOnClickListener {
 
-            val tabNumber = tabs.size + 1
-
-            tabs.add(
-                BrowserTab(
-                    "New Tab $tabNumber",
-                    "https://www.google.com"
-                )
-            )
+            TabManager.addTab()
 
             displayTabs()
         }
@@ -53,7 +38,7 @@ class TabsActivity : Activity() {
 
         tabContainer.removeAllViews()
 
-        for (tab in tabs) {
+        for ((index, tab) in TabManager.tabs.withIndex()) {
 
             val tabLayout = LinearLayout(this)
 
@@ -77,6 +62,8 @@ class TabsActivity : Activity() {
             tabLayout.addView(url)
 
             tabLayout.setOnClickListener {
+
+                TabManager.currentTabIndex = index
 
                 val intent = Intent(this, MainActivity::class.java)
 
