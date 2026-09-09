@@ -10,6 +10,11 @@
         android:label="MyBrowser"
         android:theme="@style/AppTheme">
 
+        <!-- Privacy screen -->
+        <activity
+            android:name=".PrivacyActivity"
+            android:exported="false" />
+
         <!-- Bookmarks screen -->
         <activity
             android:name=".BookmarksActivity"
@@ -34,7 +39,8 @@
 
                 <action android:name="android.intent.action.MAIN" />
 
-                <category android:name="android.intent.category.LAUNCHER" />
+                <category
+                    android:name="android.intent.category.LAUNCHER" />
 
             </intent-filter>
 
