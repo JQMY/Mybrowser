@@ -3,6 +3,7 @@ package com.mybrowser
 import android.app.Activity
 import android.content.Intent
 import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.view.Gravity
 import android.widget.Button
@@ -44,15 +45,34 @@ class TabsActivity : Activity() {
 
         for ((index, tab) in TabManager.tabs.withIndex()) {
 
-            val tabLayout = LinearLayout(this)
+            val tabCard = LinearLayout(this)
 
-            tabLayout.orientation = LinearLayout.HORIZONTAL
-            tabLayout.gravity = Gravity.CENTER_VERTICAL
-            tabLayout.setPadding(20, 15, 10, 15)
+            tabCard.orientation = LinearLayout.HORIZONTAL
+            tabCard.gravity = Gravity.CENTER_VERTICAL
+            tabCard.setPadding(18, 18, 10, 18)
+
+            val cardBackground = GradientDrawable()
+
+            cardBackground.setColor(Color.WHITE)
+            cardBackground.cornerRadius = 24f
+            cardBackground.setStroke(1, Color.LTGRAY)
+
+            tabCard.background = cardBackground
+
+            val cardParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+
+            cardParams.setMargins(0, 0, 0, 12)
+
+            tabCard.layoutParams = cardParams
 
             val informationLayout = LinearLayout(this)
 
             informationLayout.orientation = LinearLayout.VERTICAL
+            informationLayout.gravity = Gravity.CENTER_VERTICAL
+
             informationLayout.layoutParams =
                 LinearLayout.LayoutParams(
                     0,
@@ -64,13 +84,15 @@ class TabsActivity : Activity() {
 
             title.text = tab.title
             title.textSize = 18f
-            title.setTextColor(Color.BLACK)
+            title.setTextColor(Color.rgb(20, 20, 20))
+            title.maxLines = 1
 
             val url = TextView(this)
 
             url.text = tab.url
-            url.textSize = 14f
+            url.textSize = 13f
             url.setTextColor(Color.DKGRAY)
+            url.maxLines = 1
 
             informationLayout.addView(title)
             informationLayout.addView(url)
@@ -78,6 +100,7 @@ class TabsActivity : Activity() {
             val closeButton = Button(this)
 
             closeButton.text = "✕"
+            closeButton.textSize = 18f
 
             closeButton.setOnClickListener {
 
@@ -85,24 +108,23 @@ class TabsActivity : Activity() {
 
                     TabManager.tabs.removeAt(index)
 
-                    if (TabManager.currentTabIndex >= TabManager.tabs.size) {
+                    if (TabManager.currentTabIndex >=
+                        TabManager.tabs.size) {
+
                         TabManager.currentTabIndex =
                             TabManager.tabs.lastIndex
                     }
 
                     displayTabs()
-
                 }
             }
-
-            tabLayout.addView(informationLayout)
-            tabLayout.addView(closeButton)
 
             informationLayout.setOnClickListener {
 
                 TabManager.currentTabIndex = index
 
-                val intent = Intent(this, MainActivity::class.java)
+                val intent =
+                    Intent(this, MainActivity::class.java)
 
                 intent.putExtra(
                     "selectedUrl",
@@ -114,7 +136,10 @@ class TabsActivity : Activity() {
                 finish()
             }
 
-            tabContainer.addView(tabLayout)
+            tabCard.addView(informationLayout)
+            tabCard.addView(closeButton)
+
+            tabContainer.addView(tabCard)
         }
     }
 }
