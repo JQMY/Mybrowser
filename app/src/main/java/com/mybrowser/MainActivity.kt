@@ -30,6 +30,7 @@ class MainActivity : Activity() {
         val refreshButton: Button = findViewById(R.id.refreshButton)
         val historyButton: Button = findViewById(R.id.historyButton)
         val bookmarkButton: Button = findViewById(R.id.bookmarkButton)
+        val privacyButton: Button = findViewById(R.id.privacyButton)
         val tabsButton: Button = findViewById(R.id.tabsButton)
 
         TabManager.initialize()
@@ -186,7 +187,6 @@ class MainActivity : Activity() {
         }
 
         // Long press bookmark button
-        // Opens bookmarks
         bookmarkButton.setOnLongClickListener {
 
             val intent =
@@ -198,6 +198,18 @@ class MainActivity : Activity() {
             startActivity(intent)
 
             true
+        }
+
+        // Privacy
+        privacyButton.setOnClickListener {
+
+            val intent =
+                Intent(
+                    this,
+                    PrivacyActivity::class.java
+                )
+
+            startActivity(intent)
         }
 
         // Tabs
