@@ -2,35 +2,29 @@
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Internet access for web browsing -->
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application
         android:allowBackup="true"
-        android:label="MyBrowser"
+        android:label="Nexora Browser"
         android:theme="@style/AppTheme">
 
-        <!-- Privacy screen -->
         <activity
             android:name=".PrivacyActivity"
             android:exported="false" />
 
-        <!-- Bookmarks screen -->
         <activity
             android:name=".BookmarksActivity"
             android:exported="false" />
 
-        <!-- History screen -->
         <activity
             android:name=".HistoryActivity"
             android:exported="false" />
 
-        <!-- Tabs screen -->
         <activity
             android:name=".TabsActivity"
             android:exported="false" />
 
-        <!-- Main browser screen -->
         <activity
             android:name=".MainActivity"
             android:exported="true">
