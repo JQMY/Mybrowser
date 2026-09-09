@@ -3,6 +3,8 @@ package com.mybrowser
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import android.webkit.CookieManager
+import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Button
@@ -32,8 +34,33 @@ class MainActivity : Activity() {
 
         TabManager.initialize()
 
+        // Browser settings
         webView.settings.javaScriptEnabled = true
         webView.settings.domStorageEnabled = true
+
+        // Security
+        webView.settings.allowFileAccess = false
+        webView.settings.allowContentAccess = false
+
+        if (android.os.Build.VERSION.SDK_INT >=
+            android.os.Build.VERSION_CODES.LOLLIPOP) {
+
+            webView.settings.mixedContentMode =
+                WebSettings.MIXED_CONTENT_NEVER_ALLOW
+        }
+
+        if (android.os.Build.VERSION.SDK_INT >=
+            android.os.Build.VERSION_CODES.O) {
+
+            webView.settings.safeBrowsingEnabled = true
+        }
+
+        // Block third-party cookies
+        CookieManager.getInstance()
+            .setAcceptThirdPartyCookies(
+                webView,
+                false
+            )
 
         webView.webViewClient = object : WebViewClient() {
 
@@ -45,7 +72,8 @@ class MainActivity : Activity() {
 
                 if (url != null) {
 
-                    val currentTab = TabManager.currentTab()
+                    val currentTab =
+                        TabManager.currentTab()
 
                     currentTab.url = url
 
@@ -73,17 +101,18 @@ class MainActivity : Activity() {
 
         } else {
 
-            val currentTab = TabManager.currentTab()
+            val currentTab =
+                TabManager.currentTab()
 
             webView.loadUrl(currentTab.url)
         }
 
-        // Go button
+        // Go
         goButton.setOnClickListener {
             openWebsite()
         }
 
-        // Keyboard search / enter
+        // Keyboard search
         urlBar.setOnEditorActionListener { _, _, _ ->
             openWebsite()
             true
@@ -115,7 +144,6 @@ class MainActivity : Activity() {
 
         // Refresh
         refreshButton.setOnClickListener {
-
             webView.reload()
         }
 
@@ -137,7 +165,10 @@ class MainActivity : Activity() {
             val currentTab =
                 TabManager.currentTab()
 
-            if (BookmarkManager.isBookmarked(currentTab.url)) {
+            if (BookmarkManager.isBookmarked(
+                    currentTab.url
+                )
+            ) {
 
                 BookmarkManager.remove(
                     currentTab.url
@@ -155,7 +186,7 @@ class MainActivity : Activity() {
         }
 
         // Long press bookmark button
-        // Opens the bookmarks page
+        // Opens bookmarks
         bookmarkButton.setOnLongClickListener {
 
             val intent =
@@ -214,7 +245,10 @@ class MainActivity : Activity() {
         val currentUrl =
             TabManager.currentTab().url
 
-        if (BookmarkManager.isBookmarked(currentUrl)) {
+        if (BookmarkManager.isBookmarked(
+                currentUrl
+            )
+        ) {
 
             bookmarkButton.text = "★"
 
