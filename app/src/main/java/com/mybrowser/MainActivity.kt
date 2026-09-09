@@ -33,17 +33,40 @@ class MainActivity : Activity() {
         webView.settings.javaScriptEnabled = true
         webView.settings.domStorageEnabled = true
 
-        webView.webViewClient = WebViewClient()
+        webView.webViewClient = object : WebViewClient() {
+
+            override fun onPageFinished(
+                view: WebView?,
+                url: String?
+            ) {
+
+                super.onPageFinished(view, url)
+
+                if (url != null) {
+
+                    val currentTab = TabManager.currentTab()
+
+                    currentTab.url = url
+
+                    currentTab.title =
+                        view?.title ?: "New Tab"
+
+                    urlBar.setText(url)
+                }
+            }
+        }
 
         val selectedUrl = intent.getStringExtra("selectedUrl")
 
         if (selectedUrl != null) {
+
             webView.loadUrl(selectedUrl)
-            urlBar.setText(selectedUrl)
+
         } else {
+
             val currentTab = TabManager.currentTab()
+
             webView.loadUrl(currentTab.url)
-            urlBar.setText(currentTab.url)
         }
 
         goButton.setOnClickListener {
@@ -56,45 +79,54 @@ class MainActivity : Activity() {
         }
 
         backButton.setOnClickListener {
+
             if (webView.canGoBack()) {
                 webView.goBack()
             }
         }
 
         forwardButton.setOnClickListener {
+
             if (webView.canGoForward()) {
                 webView.goForward()
             }
         }
 
         homeButton.setOnClickListener {
+
             webView.loadUrl("https://www.google.com")
-            urlBar.setText("https://www.google.com")
         }
 
         refreshButton.setOnClickListener {
+
             webView.reload()
         }
 
         tabsButton.setOnClickListener {
-            val intent = Intent(this, TabsActivity::class.java)
+
+            val intent =
+                Intent(this, TabsActivity::class.java)
+
             startActivity(intent)
         }
     }
 
     private fun openWebsite() {
 
-        var address = urlBar.text.toString().trim()
+        var address =
+            urlBar.text.toString().trim()
 
         if (address.isEmpty()) {
             return
         }
 
         if (!address.startsWith("http://") &&
-            !address.startsWith("https://")) {
+            !address.startsWith("https://")
+        ) {
 
-            address = "https://www.google.com/search?q=" +
-                    address.replace(" ", "+")
+            address =
+                "https://www.google.com/search?q=" +
+                        address.replace(" ", "+")
         }
 
         webView.loadUrl(address)
@@ -106,8 +138,11 @@ class MainActivity : Activity() {
     override fun onBackPressed() {
 
         if (webView.canGoBack()) {
+
             webView.goBack()
+
         } else {
+
             super.onBackPressed()
         }
     }
