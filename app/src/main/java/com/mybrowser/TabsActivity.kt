@@ -1,6 +1,7 @@
 package com.mybrowser
 
 import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
 import android.graphics.Color
 import android.view.Gravity
@@ -22,7 +23,6 @@ class TabsActivity : Activity() {
 
         val newTabButton: Button = findViewById(R.id.newTabButton)
 
-        // Start with one tab
         if (tabs.isEmpty()) {
             tabs.add(
                 BrowserTab(
@@ -53,7 +53,7 @@ class TabsActivity : Activity() {
 
         tabContainer.removeAllViews()
 
-        for ((index, tab) in tabs.withIndex()) {
+        for (tab in tabs) {
 
             val tabLayout = LinearLayout(this)
 
@@ -78,8 +78,12 @@ class TabsActivity : Activity() {
 
             tabLayout.setOnClickListener {
 
-                // Close the tabs page for now.
-                // Real tab switching comes in the next step.
+                val intent = Intent(this, MainActivity::class.java)
+
+                intent.putExtra("selectedUrl", tab.url)
+
+                startActivity(intent)
+
                 finish()
             }
 
