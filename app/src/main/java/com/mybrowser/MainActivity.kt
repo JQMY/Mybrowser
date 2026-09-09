@@ -27,6 +27,7 @@ class MainActivity : Activity() {
         val homeButton: Button = findViewById(R.id.homeButton)
         val refreshButton: Button = findViewById(R.id.refreshButton)
         val tabsButton: Button = findViewById(R.id.tabsButton)
+        val historyButton: Button = findViewById(R.id.historyButton)
 
         TabManager.initialize()
 
@@ -126,6 +127,15 @@ class MainActivity : Activity() {
             startActivity(intent)
         }
     }
+
+   // History 
+   historyButton.setOnClickListener {
+
+    val intent =
+        Intent(this, HistoryActivity::class.java)
+
+    startActivity(intent)
+}
 
     private fun openWebsite() {
 
