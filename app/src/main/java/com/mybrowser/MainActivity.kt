@@ -8,7 +8,7 @@ import android.webkit.WebViewClient
 import android.widget.Button
 import android.widget.EditText
 
-class MainActivity : Activity() {
+class MainActivity : Activity {
 
     private lateinit var webView: WebView
     private lateinit var urlBar: EditText
@@ -78,15 +78,18 @@ class MainActivity : Activity() {
             webView.loadUrl(currentTab.url)
         }
 
+        // Go button
         goButton.setOnClickListener {
             openWebsite()
         }
 
+        // Keyboard search / enter
         urlBar.setOnEditorActionListener { _, _, _ ->
             openWebsite()
             true
         }
 
+        // Back
         backButton.setOnClickListener {
 
             if (webView.canGoBack()) {
@@ -94,6 +97,7 @@ class MainActivity : Activity() {
             }
         }
 
+        // Forward
         forwardButton.setOnClickListener {
 
             if (webView.canGoForward()) {
@@ -101,6 +105,7 @@ class MainActivity : Activity() {
             }
         }
 
+        // Home
         homeButton.setOnClickListener {
 
             webView.loadUrl(
@@ -108,26 +113,35 @@ class MainActivity : Activity() {
             )
         }
 
+        // Refresh
         refreshButton.setOnClickListener {
 
             webView.reload()
         }
 
+        // History
         historyButton.setOnClickListener {
 
             val intent =
-                Intent(this, HistoryActivity::class.java)
+                Intent(
+                    this,
+                    HistoryActivity::class.java
+                )
 
             startActivity(intent)
         }
 
+        // Bookmark
         bookmarkButton.setOnClickListener {
 
-            val currentTab = TabManager.currentTab()
+            val currentTab =
+                TabManager.currentTab()
 
             if (BookmarkManager.isBookmarked(currentTab.url)) {
 
-                BookmarkManager.remove(currentTab.url)
+                BookmarkManager.remove(
+                    currentTab.url
+                )
 
             } else {
 
@@ -140,10 +154,28 @@ class MainActivity : Activity() {
             updateBookmarkButton()
         }
 
+        // Open bookmarks page
+        bookmarkButton.setOnLongClickListener {
+
+            val intent =
+                Intent(
+                    this,
+                    BookmarksActivity::class.java
+                )
+
+            startActivity(intent)
+
+            true
+        }
+
+        // Tabs
         tabsButton.setOnClickListener {
 
             val intent =
-                Intent(this, TabsActivity::class.java)
+                Intent(
+                    this,
+                    TabsActivity::class.java
+                )
 
             startActivity(intent)
         }
@@ -169,7 +201,8 @@ class MainActivity : Activity() {
 
         webView.loadUrl(address)
 
-        TabManager.currentTab().url = address
+        TabManager.currentTab().url =
+            address
     }
 
     private fun updateBookmarkButton() {
