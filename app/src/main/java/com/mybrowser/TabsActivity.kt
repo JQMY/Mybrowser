@@ -30,9 +30,7 @@ class TabsActivity : Activity() {
         displayTabs()
 
         newTabButton.setOnClickListener {
-
             TabManager.addTab()
-
             displayTabs()
         }
     }
@@ -53,9 +51,21 @@ class TabsActivity : Activity() {
 
             val cardBackground = GradientDrawable()
 
-            cardBackground.setColor(Color.WHITE)
+            if (index == TabManager.currentTabIndex) {
+                cardBackground.setColor(Color.rgb(232, 240, 254))
+                cardBackground.setStroke(
+                    3,
+                    Color.rgb(33, 150, 243)
+                )
+            } else {
+                cardBackground.setColor(Color.WHITE)
+                cardBackground.setStroke(
+                    1,
+                    Color.LTGRAY
+                )
+            }
+
             cardBackground.cornerRadius = 24f
-            cardBackground.setStroke(1, Color.LTGRAY)
 
             tabCard.background = cardBackground
 
@@ -82,7 +92,12 @@ class TabsActivity : Activity() {
 
             val title = TextView(this)
 
-            title.text = tab.title
+            title.text = if (index == TabManager.currentTabIndex) {
+                "●  ${tab.title}"
+            } else {
+                tab.title
+            }
+
             title.textSize = 18f
             title.setTextColor(Color.rgb(20, 20, 20))
             title.maxLines = 1
