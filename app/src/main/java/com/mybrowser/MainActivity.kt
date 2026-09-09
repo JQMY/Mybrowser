@@ -28,42 +28,60 @@ class MainActivity : Activity() {
         val refreshButton: Button = findViewById(R.id.refreshButton)
         val tabsButton: Button = findViewById(R.id.tabsButton)
 
+        // Enable browser features
         webView.settings.javaScriptEnabled = true
         webView.settings.domStorageEnabled = true
 
+        // Keep websites inside MyBrowser
         webView.webViewClient = WebViewClient()
 
-        webView.loadUrl("https://www.google.com")
+        // Check if a tab was selected
+        val selectedUrl = intent.getStringExtra("selectedUrl")
 
+        if (selectedUrl != null) {
+            webView.loadUrl(selectedUrl)
+            urlBar.setText(selectedUrl)
+        } else {
+            webView.loadUrl("https://www.google.com")
+        }
+
+        // Go button
         goButton.setOnClickListener {
             openWebsite()
         }
 
+        // Keyboard search/enter
         urlBar.setOnEditorActionListener { _, _, _ ->
             openWebsite()
             true
         }
 
+        // Back
         backButton.setOnClickListener {
             if (webView.canGoBack()) {
                 webView.goBack()
             }
         }
 
+        // Forward
         forwardButton.setOnClickListener {
             if (webView.canGoForward()) {
                 webView.goForward()
             }
         }
 
+        // Home
         homeButton.setOnClickListener {
             webView.loadUrl("https://www.google.com")
+            urlBar.setText("https://www.google.com")
         }
 
+        // Refresh
         refreshButton.setOnClickListener {
             webView.reload()
         }
 
+        // Tabs
         tabsButton.setOnClickListener {
             val intent = Intent(this, TabsActivity::class.java)
             startActivity(intent)
