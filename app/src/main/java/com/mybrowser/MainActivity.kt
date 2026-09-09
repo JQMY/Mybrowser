@@ -8,7 +8,7 @@ import android.webkit.WebViewClient
 import android.widget.Button
 import android.widget.EditText
 
-class MainActivity : Activity {
+class MainActivity : Activity() {
 
     private lateinit var webView: WebView
     private lateinit var urlBar: EditText
@@ -154,7 +154,8 @@ class MainActivity : Activity {
             updateBookmarkButton()
         }
 
-        // Open bookmarks page
+        // Long press bookmark button
+        // Opens the bookmarks page
         bookmarkButton.setOnLongClickListener {
 
             val intent =
