@@ -31,163 +31,110 @@ class MainActivity : Activity() {
         val refreshButton: Button = findViewById(R.id.refreshButton)
         val historyButton: Button = findViewById(R.id.historyButton)
         val bookmarkButton: Button = findViewById(R.id.bookmarkButton)
-        val privacyButton: Button = findViewById(R.id.privacyButton)
         val tabsButton: Button = findViewById(R.id.tabsButton)
 
         TabManager.initialize()
 
-        // =========================
-        // BROWSER SETTINGS
-        // =========================
-
+        // Browser settings
         webView.settings.javaScriptEnabled = true
         webView.settings.domStorageEnabled = true
 
-        // =========================
-        // SECURITY
-        // =========================
-
+        // Security settings
         webView.settings.allowFileAccess = false
         webView.settings.allowContentAccess = false
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-
             webView.settings.mixedContentMode =
                 WebSettings.MIXED_CONTENT_NEVER_ALLOW
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-
             webView.settings.safeBrowsingEnabled = true
         }
 
-        // Disable third-party cookies
         CookieManager.getInstance()
-            .setAcceptThirdPartyCookies(
-                webView,
-                false
-            )
+            .setAcceptThirdPartyCookies(webView, false)
 
-        // =========================
-        // WEBVIEW CLIENT
-        // =========================
+        // WebView client
+        webView.webViewClient = object : WebViewClient() {
 
-        webView.webViewClient =
-            object : WebViewClient() {
+            override fun onPageFinished(
+                view: WebView?,
+                url: String?
+            ) {
+                super.onPageFinished(view, url)
 
-                override fun onPageFinished(
-                    view: WebView?,
-                    url: String?
+                if (url != null &&
+                    !url.startsWith("https://nexora.local")
                 ) {
-                    super.onPageFinished(view, url)
 
-                    if (url != null &&
-                        !url.startsWith(
-                            "https://nexora.local"
-                        )
-                    ) {
+                    val currentTab = TabManager.currentTab()
 
-                        val currentTab =
-                            TabManager.currentTab()
+                    currentTab.url = url
 
-                        currentTab.url = url
+                    currentTab.title =
+                        view?.title ?: "New Tab"
 
-                        currentTab.title =
-                            view?.title ?: "New Tab"
+                    urlBar.setText(url)
 
-                        urlBar.setText(url)
+                    HistoryManager.add(
+                        currentTab.title,
+                        url
+                    )
 
-                        HistoryManager.add(
-                            currentTab.title,
-                            url
-                        )
-
-                        updateBookmarkButton()
-                    }
+                    updateBookmarkButton()
                 }
             }
+        }
 
-        // =========================
-        // OPEN INITIAL PAGE
-        // =========================
-
+        // Open requested page or Nexora home
         val selectedUrl =
             intent.getStringExtra("selectedUrl")
 
         if (selectedUrl != null) {
-
             webView.loadUrl(selectedUrl)
-
         } else {
-
             loadNexoraHome()
         }
 
-        // =========================
-        // GO BUTTON
-        // =========================
-
+        // Go
         goButton.setOnClickListener {
             openWebsite()
         }
 
-        // =========================
-        // KEYBOARD SEARCH
-        // =========================
-
+        // Keyboard search
         urlBar.setOnEditorActionListener { _, _, _ ->
-
             openWebsite()
-
             true
         }
 
-        // =========================
-        // BACK
-        // =========================
-
+        // Back
         backButton.setOnClickListener {
 
             if (webView.canGoBack()) {
-
                 webView.goBack()
             }
         }
 
-        // =========================
-        // FORWARD
-        // =========================
-
+        // Forward
         forwardButton.setOnClickListener {
 
             if (webView.canGoForward()) {
-
                 webView.goForward()
             }
         }
 
-        // =========================
-        // HOME
-        // =========================
-
+        // Home
         homeButton.setOnClickListener {
-
             loadNexoraHome()
         }
 
-        // =========================
-        // REFRESH
-        // =========================
-
+        // Refresh
         refreshButton.setOnClickListener {
-
             webView.reload()
         }
 
-        // =========================
-        // HISTORY
-        // =========================
-
+        // History
         historyButton.setOnClickListener {
 
             val intent =
@@ -199,10 +146,7 @@ class MainActivity : Activity() {
             startActivity(intent)
         }
 
-        // =========================
-        // BOOKMARK
-        // =========================
-
+        // Bookmark
         bookmarkButton.setOnClickListener {
 
             val currentTab =
@@ -229,11 +173,7 @@ class MainActivity : Activity() {
             updateBookmarkButton()
         }
 
-        // =========================
-        // OPEN BOOKMARKS
-        // LONG PRESS
-        // =========================
-
+        // Long press bookmark opens bookmark list
         bookmarkButton.setOnLongClickListener {
 
             val intent =
@@ -247,25 +187,7 @@ class MainActivity : Activity() {
             true
         }
 
-        // =========================
-        // PRIVACY
-        // =========================
-
-        privacyButton.setOnClickListener {
-
-            val intent =
-                Intent(
-                    this,
-                    PrivacyActivity::class.java
-                )
-
-            startActivity(intent)
-        }
-
-        // =========================
-        // TABS
-        // =========================
-
+        // Tabs
         tabsButton.setOnClickListener {
 
             val intent =
@@ -278,538 +200,524 @@ class MainActivity : Activity() {
         }
     }
 
-    // =====================================================
-    // NEXORA HOME PAGE
-    // =====================================================
-
     private fun loadNexoraHome() {
 
         val homePage = """
-            <!DOCTYPE html>
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<meta name="viewport"
+content="width=device-width,
+initial-scale=1.0,
+maximum-scale=1.0">
+
+<style>
+
+* {
+    box-sizing: border-box;
+}
 
-            <html>
+body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: sans-serif;
+    color: white;
 
-            <head>
+    background:
+    radial-gradient(
+        circle at 50% 0%,
+        #284fa8 0%,
+        #101d50 32%,
+        #070c25 68%,
+        #02030e 100%
+    );
 
-                <meta
-                    name="viewport"
-                    content="width=device-width,
-                    initial-scale=1.0,
-                    maximum-scale=1.0">
+    overflow-x: hidden;
+}
 
-                <style>
+.container {
+    width: 100%;
+    max-width: 720px;
+    margin: auto;
+    padding: 35px 20px 45px;
+    text-align: center;
+}
 
-                    * {
-                        box-sizing: border-box;
-                    }
+.logo {
+    width: 90px;
+    height: 90px;
+    margin: 5px auto 12px;
 
-                    body {
+    border-radius: 28px;
 
-                        margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 
-                        min-height: 100vh;
+    font-size: 62px;
+    font-weight: bold;
 
-                        font-family:
-                            sans-serif;
+    background:
+    linear-gradient(
+        145deg,
+        #00eaff,
+        #387cff,
+        #b34cff
+    );
 
-                        color: white;
+    color: white;
 
-                        background:
-                            radial-gradient(
-                                circle at 50% 0%,
-                                #284fa8 0%,
-                                #101d50 32%,
-                                #070c25 68%,
-                                #02030e 100%
-                            );
+    box-shadow:
+    0 0 30px
+    rgba(0,180,255,0.45);
+}
 
-                        overflow-x: hidden;
-                    }
+.brand {
+    font-size: 42px;
+    font-weight: bold;
+    letter-spacing: 2px;
+}
 
-                    body:before {
+.tagline {
+    margin-top: 7px;
+    color: #cbd6ff;
+    font-size: 13px;
+    letter-spacing: 6px;
+}
 
-                        content: "";
+.status {
+    margin: 22px auto 28px;
 
-                        position: fixed;
+    display: inline-flex;
+    gap: 10px;
 
-                        width: 420px;
-                        height: 420px;
+    padding: 9px 17px;
 
-                        border-radius: 50%;
+    border-radius: 20px;
 
-                        background:
-                            radial-gradient(
-                                circle,
-                                rgba(
-                                    0,
-                                    220,
-                                    255,
-                                    0.20
-                                ),
-                                transparent 70%
-                            );
+    background:
+    rgba(255,255,255,0.08);
 
-                        top: -180px;
+    border:
+    1px solid
+    rgba(255,255,255,0.14);
 
-                        left: 50%;
+    color: #dce4ff;
 
-                        transform:
-                            translateX(-50%);
+    font-size: 12px;
+}
 
-                        pointer-events: none;
-                    }
+.search {
+    width: 100%;
+    height: 60px;
 
-                    .container {
+    display: flex;
+    align-items: center;
 
-                        width: 100%;
+    padding: 5px;
 
-                        max-width: 720px;
+    border-radius: 32px;
 
-                        margin: auto;
+    background:
+    rgba(255,255,255,0.96);
 
-                        padding:
-                            35px 20px 45px;
+    box-shadow:
+    0 12px 35px
+    rgba(0,0,0,0.25);
+}
 
-                        text-align: center;
-                    }
+.search input {
+    flex: 1;
 
-                    .logo {
+    height: 50px;
 
-                        width: 90px;
+    border: none;
+    outline: none;
 
-                        height: 90px;
+    background: transparent;
 
-                        margin:
-                            5px auto 12px;
+    padding: 0 20px;
 
-                        border-radius: 28px;
+    font-size: 16px;
+    color: #111;
+}
 
-                        display: flex;
+.search button {
+    width: 50px;
+    height: 50px;
 
-                        align-items: center;
+    border: none;
+    border-radius: 50%;
 
-                        justify-content: center;
+    background: #111b40;
+    color: white;
 
-                        font-size: 62px;
+    font-size: 22px;
+}
 
-                        font-weight: bold;
+.section-title {
+    margin-top: 38px;
+    margin-bottom: 17px;
 
-                        background:
-                            linear-gradient(
-                                145deg,
-                                #00eaff,
-                                #387cff,
-                                #b34cff
-                            );
+    text-align: left;
 
-                        color: white;
+    font-size: 15px;
+    color: #aebcf0;
+}
 
-                        box-shadow:
-                            0 0 30px
-                            rgba(
-                                0,
-                                180,
-                                255,
-                                0.45
-                            );
-                    }
+.shortcuts {
+    display: grid;
 
-                    .brand {
+    grid-template-columns:
+    repeat(3, 1fr);
 
-                        font-size: 42px;
+    gap: 13px;
+}
 
-                        font-weight: bold;
+.shortcut {
+    text-decoration: none;
+    color: white;
 
-                        letter-spacing: 2px;
-                    }
+    padding: 16px 7px;
 
-                    .tagline {
+    border-radius: 20px;
 
-                        margin-top: 7px;
+    background:
+    rgba(255,255,255,0.07);
 
-                        color: #cbd6ff;
+    border:
+    1px solid
+    rgba(255,255,255,0.13);
+}
 
-                        font-size: 13px;
+.icon {
+    width: 55px;
+    height: 55px;
 
-                        letter-spacing: 6px;
-                    }
+    margin: auto;
 
-                    .status {
+    border-radius: 17px;
 
-                        margin:
-                            22px auto 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 
-                        display: inline-flex;
+    background:
+    rgba(255,255,255,0.12);
 
-                        gap: 12px;
+    font-size: 24px;
+    font-weight: bold;
+}
 
-                        padding:
-                            9px 17px;
+.name {
+    margin-top: 9px;
 
-                        border-radius: 20px;
+    font-size: 12px;
+    color: #e1e7ff;
+}
 
-                        background:
-                            rgba(
-                                255,
-                                255,
-                                255,
-                                0.08
-                            );
+.info {
+    margin-top: 28px;
 
-                        border:
-                            1px solid
-                            rgba(
-                                255,
-                                255,
-                                255,
-                                0.14
-                            );
+    padding: 18px;
 
-                        color: #dce4ff;
+    border-radius: 20px;
 
-                        font-size: 12px;
-                    }
+    text-align: left;
 
-                    .search {
+    background:
+    rgba(255,255,255,0.07);
 
-                        width: 100%;
+    border:
+    1px solid
+    rgba(255,255,255,0.12);
+}
 
-                        height: 60px;
+.info-title {
+    font-size: 12px;
+    color: #9eacd9;
+}
 
-                        display: flex;
+.info-main {
+    margin-top: 7px;
 
-                        align-items: center;
+    font-size: 24px;
+    font-weight: bold;
+}
 
-                        padding: 5px;
+.info-text {
+    margin-top: 4px;
 
-                        border-radius: 32px;
+    font-size: 12px;
+    color: #b9c5e9;
+}
 
-                        background:
-                            rgba(
-                                255,
-                                255,
-                                255,
-                                0.96
-                            );
+.footer {
+    margin-top: 35px;
 
-                        box-shadow:
-                            0 12px 35px
-                            rgba(
-                                0,
-                                0,
-                                0,
-                                0.25
-                            );
-                    }
+    font-size: 12px;
+    color: #7784b2;
+}
 
-                    .search input {
+@media (max-width: 380px) {
 
-                        flex: 1;
+    .brand {
+        font-size: 36px;
+    }
 
-                        height: 50px;
+    .shortcuts {
+        gap: 8px;
+    }
 
-                        border: none;
+    .shortcut {
+        padding: 12px 4px;
+    }
+}
 
-                        outline: none;
+</style>
 
-                        background:
-                            transparent;
+</head>
 
-                        padding:
-                            0 20px;
+<body>
 
-                        font-size: 16px;
+<div class="container">
 
-                        color: #111;
-                    }
+<div class="logo">
+N
+</div>
 
-                    .search button {
+<div class="brand">
+Nexora
+</div>
 
-                        width: 50px;
+<div class="tagline">
+BROWSE BEYOND.
+</div>
 
-                        height: 50px;
+<div class="status">
+⚡ Fast
+•
+🛡 Secure
+•
+✦ Smart
+</div>
 
-                        border: none;
+<form
+class="search"
+action="https://www.google.com/search"
+method="get">
 
-                        border-radius: 50%;
+<input
+type="text"
+name="q"
+placeholder="Search the web..."
+autocomplete="off">
 
-                        background: #111b40;
+<button type="submit">
+→
+</button>
 
-                        color: white;
+</form>
 
-                        font-size: 22px;
-                    }
+<div class="section-title">
+Quick access
+</div>
 
-                    .section-title {
+<div class="shortcuts">
 
-                        margin-top: 38px;
+<a
+class="shortcut"
+href="https://www.youtube.com">
 
-                        margin-bottom: 17px;
+<div class="icon">
+▶
+</div>
 
-                        text-align: left;
+<div class="name">
+YouTube
+</div>
 
-                        font-size: 15px;
+</a>
 
-                        color: #aebcf0;
-                    }
+<a
+class="shortcut"
+href="https://www.google.com">
 
-                    .shortcuts {
+<div class="icon">
+G
+</div>
 
-                        display: grid;
+<div class="name">
+Google
+</div>
 
-                        grid-template-columns:
-                            repeat(3, 1fr);
+</a>
 
-                        gap: 13px;
-                    }
+<a
+class="shortcut"
+href="https://x.com">
 
-                    .shortcut {
+<div class="icon">
+𝕏
+</div>
 
-                        text-decoration: none;
+<div class="name">
+X
+</div>
 
-                        color: white;
+</a>
 
-                        padding: 16px 7px;
+<a
+class="shortcut"
+href="https://www.instagram.com">
 
-                        border-radius: 20px;
+<div class="icon">
+◎
+</div>
 
-                        background:
-                            rgba(
-                                255,
-                                255,
-                                255,
-                                0.07
-                            );
+<div class="name">
+Instagram
+</div>
 
-                        border:
-                            1px solid
-                            rgba(
-                                255,
-                                255,
-                                255,
-                                0.13
-                            );
-                    }
+</a>
 
-                    .icon {
+<a
+class="shortcut"
+href="https://chatgpt.com">
 
-                        width: 55px;
+<div class="icon">
+✦
+</div>
 
-                        height: 55px;
+<div class="name">
+ChatGPT
+</div>
 
-                        margin: auto;
+</a>
 
-                        border-radius: 17px;
+<a
+class="shortcut"
+href="https://www.google.com">
 
-                        display: flex;
+<div class="icon">
++
+</div>
 
-                        align-items: center;
+<div class="name">
+Add
+</div>
 
-                        justify-content: center;
+</a>
 
-                        background:
-                            rgba(
-                                255,
-                                255,
-                                255,
-                                0.12
-                            );
+</div>
 
-                        font-size: 24px;
+<div class="info">
 
-                        font-weight: bold;
-                    }
+<div class="info-title">
+YOUR BROWSING SPACE
+</div>
 
-                    .name {
+<div class="info-main">
+Ready to explore
+</div>
 
-                        margin-top: 9px;
+<div class="info-text">
+Fast, secure and minimal browsing.
+</div>
 
-                        font-size: 12px;
+</div>
 
-                        color: #e1e7ff;
-                    }
+<div class="footer">
+Nexora Browser • Browse Beyond.
+</div>
 
-                    .weather {
+</div>
 
-                        margin-top: 28px;
+</body>
 
-                        padding: 18px;
+</html>
+        """.trimIndent()
 
-                        border-radius: 20px;
+        webView.loadDataWithBaseURL(
+            "https://nexora.local/",
+            homePage,
+            "text/html",
+            "UTF-8",
+            null
+        )
 
-                        text-align: left;
+        urlBar.setText("")
 
-                        background:
-                            rgba(
-                                255,
-                                255,
-                                255,
-                                0.07
-                            );
+        TabManager.currentTab().url =
+            "https://nexora.local/"
 
-                        border:
-                            1px solid
-                            rgba(
-                                255,
-                                255,
-                                255,
-                                0.12
-                            );
-                    }
+        TabManager.currentTab().title =
+            "Nexora"
 
-                    .weather-title {
+        updateBookmarkButton()
+    }
 
-                        font-size: 12px;
+    private fun openWebsite() {
 
-                        color: #9eacd9;
-                    }
+        var address =
+            urlBar.text.toString().trim()
 
-                    .weather-value {
+        if (address.isEmpty()) {
+            return
+        }
 
-                        margin-top: 7px;
+        if (
+            !address.startsWith("http://") &&
+            !address.startsWith("https://")
+        ) {
 
-                        font-size: 24px;
+            address =
+                "https://www.google.com/search?q=" +
+                address.replace(" ", "+")
+        }
 
-                        font-weight: bold;
-                    }
+        webView.loadUrl(address)
 
-                    .weather-info {
+        TabManager.currentTab().url =
+            address
+    }
 
-                        margin-top: 4px;
+    private fun updateBookmarkButton() {
 
-                        font-size: 12px;
+        val bookmarkButton: Button =
+            findViewById(
+                R.id.bookmarkButton
+            )
 
-                        color: #b9c5e9;
-                    }
+        val currentUrl =
+            TabManager.currentTab().url
 
-                    .footer {
+        if (
+            BookmarkManager.isBookmarked(
+                currentUrl
+            )
+        ) {
 
-                        margin-top: 35px;
+            bookmarkButton.text = "★"
 
-                        font-size: 12px;
+        } else {
 
-                        color: #7784b2;
-                    }
+            bookmarkButton.text = "☆"
+        }
+    }
 
-                    @media (max-width: 380px) {
+    @Suppress("DEPRECATION")
+    override fun onBackPressed() {
 
-                        .brand {
+        if (webView.canGoBack()) {
 
-                            font-size: 36px;
-                        }
+            webView.goBack()
 
-                        .shortcuts {
+        } else {
 
-                            gap: 8px;
-                        }
-
-                        .shortcut {
-
-                            padding:
-                                12px 4px;
-                        }
-                    }
-
-                </style>
-
-            </head>
-
-            <body>
-
-                <div class="container">
-
-                    <div class="logo">
-                        N
-                    </div>
-
-                    <div class="brand">
-                        Nexora
-                    </div>
-
-                    <div class="tagline">
-                        BROWSE BEYOND.
-                    </div>
-
-                    <div class="status">
-
-                        ⚡ Fast
-                        •
-                        🛡 Secure
-                        •
-                        ✦ Smart
-
-                    </div>
-
-                    <form
-                        class="search"
-                        action=
-                        "https://www.google.com/search"
-                        method="get">
-
-                        <input
-                            type="text"
-                            name="q"
-                            placeholder=
-                            "Search the web..."
-                            autocomplete="off">
-
-                        <button
-                            type="submit">
-                            →
-                        </button>
-
-                    </form>
-
-                    <div class="section-title">
-                        Quick access
-                    </div>
-
-                    <div class="shortcuts">
-
-                        <a
-                            class="shortcut"
-                            href=
-                            "https://www.youtube.com">
-
-                            <div class="icon">
-                                ▶
-                            </div>
-
-                            <div class="name">
-                                YouTube
-                            </div>
-
-                        </a>
-
-                        <a
-                            class="shortcut"
-                            href=
-                            "https://www.google.com">
-
-                            <div class="icon">
-                                G
-                            </div>
-
-                            <div class="name">
-                                Google
-                            </div>
-
-                        </a>
-
-                        <a
-                            class="shortcut"
-                            href=
-                            "https://x.com">
-
-                            <div class="icon">
-                                𝕏
-                            </div>
-
-                            <div class="name">
-                                X
-                            </div>
-
-                        </a>
-
-                        <a
-                            
+            super.onBackPressed()
+        }
+    }
+}
