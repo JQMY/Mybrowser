@@ -8,45 +8,69 @@ import android.widget.RadioGroup
 
 class SettingsActivity : Activity() {
 
+    private lateinit var backgroundGroup: RadioGroup
+    private lateinit var saveButton: Button
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         setContentView(R.layout.settings_page)
 
-        val backgroundGroup: RadioGroup =
+        backgroundGroup =
             findViewById(R.id.backgroundGroup)
 
-        val saveButton: Button =
+        saveButton =
             findViewById(R.id.saveSettingsButton)
 
+        val cosmic =
+            findViewById<RadioButton>(
+                R.id.cosmicBackground
+            )
+
+        val midnight =
+            findViewById<RadioButton>(
+                R.id.midnightBackground
+            )
+
+        val ocean =
+            findViewById<RadioButton>(
+                R.id.oceanBackground
+            )
+
+        val purple =
+            findViewById<RadioButton>(
+                R.id.purpleBackground
+            )
+
+        val preferences =
+            getSharedPreferences(
+                "nexora_settings",
+                MODE_PRIVATE
+            )
+
         val savedBackground =
-            getPreferences(MODE_PRIVATE)
-                .getString(
-                    "background",
-                    "cosmic"
-                )
+            preferences.getString(
+                "background",
+                "cosmic"
+            )
 
         when (savedBackground) {
 
-            "cosmic" ->
-                findViewById<RadioButton>(
-                    R.id.cosmicBackground
-                ).isChecked = true
+            "midnight" -> {
+                midnight.isChecked = true
+            }
 
-            "midnight" ->
-                findViewById<RadioButton>(
-                    R.id.midnightBackground
-                ).isChecked = true
+            "ocean" -> {
+                ocean.isChecked = true
+            }
 
-            "ocean" ->
-                findViewById<RadioButton>(
-                    R.id.oceanBackground
-                ).isChecked = true
+            "purple" -> {
+                purple.isChecked = true
+            }
 
-            "purple" ->
-                findViewById<RadioButton>(
-                    R.id.purpleBackground
-                ).isChecked = true
+            else -> {
+                cosmic.isChecked = true
+            }
         }
 
         saveButton.setOnClickListener {
@@ -54,7 +78,7 @@ class SettingsActivity : Activity() {
             val selectedId =
                 backgroundGroup.checkedRadioButtonId
 
-            val selectedBackground =
+            val background =
                 when (selectedId) {
 
                     R.id.midnightBackground ->
@@ -70,11 +94,11 @@ class SettingsActivity : Activity() {
                         "cosmic"
                 }
 
-            getPreferences(MODE_PRIVATE)
+            preferences
                 .edit()
                 .putString(
                     "background",
-                    selectedBackground
+                    background
                 )
                 .apply()
 
