@@ -27,6 +27,7 @@ class MainActivity : Activity() {
         val homeButton: Button = findViewById(R.id.homeButton)
         val refreshButton: Button = findViewById(R.id.refreshButton)
         val historyButton: Button = findViewById(R.id.historyButton)
+        val bookmarkButton: Button = findViewById(R.id.bookmarkButton)
         val tabsButton: Button = findViewById(R.id.tabsButton)
 
         TabManager.initialize()
@@ -57,6 +58,8 @@ class MainActivity : Activity() {
                         currentTab.title,
                         url
                     )
+
+                    updateBookmarkButton()
                 }
             }
         }
@@ -118,6 +121,25 @@ class MainActivity : Activity() {
             startActivity(intent)
         }
 
+        bookmarkButton.setOnClickListener {
+
+            val currentTab = TabManager.currentTab()
+
+            if (BookmarkManager.isBookmarked(currentTab.url)) {
+
+                BookmarkManager.remove(currentTab.url)
+
+            } else {
+
+                BookmarkManager.add(
+                    currentTab.title,
+                    currentTab.url
+                )
+            }
+
+            updateBookmarkButton()
+        }
+
         tabsButton.setOnClickListener {
 
             val intent =
@@ -148,6 +170,24 @@ class MainActivity : Activity() {
         webView.loadUrl(address)
 
         TabManager.currentTab().url = address
+    }
+
+    private fun updateBookmarkButton() {
+
+        val bookmarkButton: Button =
+            findViewById(R.id.bookmarkButton)
+
+        val currentUrl =
+            TabManager.currentTab().url
+
+        if (BookmarkManager.isBookmarked(currentUrl)) {
+
+            bookmarkButton.text = "★"
+
+        } else {
+
+            bookmarkButton.text = "☆"
+        }
     }
 
     @Suppress("DEPRECATION")
