@@ -26,8 +26,8 @@ class MainActivity : Activity() {
         val forwardButton: Button = findViewById(R.id.forwardButton)
         val homeButton: Button = findViewById(R.id.homeButton)
         val refreshButton: Button = findViewById(R.id.refreshButton)
-        val tabsButton: Button = findViewById(R.id.tabsButton)
         val historyButton: Button = findViewById(R.id.historyButton)
+        val tabsButton: Button = findViewById(R.id.tabsButton)
 
         TabManager.initialize()
 
@@ -40,7 +40,6 @@ class MainActivity : Activity() {
                 view: WebView?,
                 url: String?
             ) {
-
                 super.onPageFinished(view, url)
 
                 if (url != null) {
@@ -54,7 +53,6 @@ class MainActivity : Activity() {
 
                     urlBar.setText(url)
 
-                    // Save page to browser history
                     HistoryManager.add(
                         currentTab.title,
                         url
@@ -77,18 +75,15 @@ class MainActivity : Activity() {
             webView.loadUrl(currentTab.url)
         }
 
-        // Go button
         goButton.setOnClickListener {
             openWebsite()
         }
 
-        // Keyboard search / enter
         urlBar.setOnEditorActionListener { _, _, _ ->
             openWebsite()
             true
         }
 
-        // Back
         backButton.setOnClickListener {
 
             if (webView.canGoBack()) {
@@ -96,7 +91,6 @@ class MainActivity : Activity() {
             }
         }
 
-        // Forward
         forwardButton.setOnClickListener {
 
             if (webView.canGoForward()) {
@@ -104,7 +98,6 @@ class MainActivity : Activity() {
             }
         }
 
-        // Home
         homeButton.setOnClickListener {
 
             webView.loadUrl(
@@ -112,13 +105,19 @@ class MainActivity : Activity() {
             )
         }
 
-        // Refresh
         refreshButton.setOnClickListener {
 
             webView.reload()
         }
 
-        // Tabs
+        historyButton.setOnClickListener {
+
+            val intent =
+                Intent(this, HistoryActivity::class.java)
+
+            startActivity(intent)
+        }
+
         tabsButton.setOnClickListener {
 
             val intent =
@@ -127,15 +126,6 @@ class MainActivity : Activity() {
             startActivity(intent)
         }
     }
-
-   // History 
-   historyButton.setOnClickListener {
-
-    val intent =
-        Intent(this, HistoryActivity::class.java)
-
-    startActivity(intent)
-}
 
     private fun openWebsite() {
 
