@@ -2,117 +2,150 @@ package com.mybrowser
 
 import android.app.Activity
 import android.content.Intent
-import android.net.Uri
-import android.os.Build
+import android.graphics.Bitmap
 import android.os.Bundle
+import android.view.KeyEvent
 import android.view.inputmethod.EditorInfo
-import android.webkit.CookieManager
-import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
-import android.webkit.WebSettings
+import android.webkit.WebResourceResponse
 import android.webkit.WebView
-import android.webkit.WebViewClient
 import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
+import androidx.webkit.WebViewAssetLoader
+import androidx.webkit.WebViewClientCompat
 import java.io.File
 
 class MainActivity : Activity() {
 
     private lateinit var webView: WebView
     private lateinit var urlBar: EditText
-    private lateinit var goButton: Button
-    private lateinit var backButton: Button
-    private lateinit var forwardButton: Button
-    private lateinit var homeButton: Button
-    private lateinit var refreshButton: Button
-    private lateinit var historyButton: Button
-    private lateinit var bookmarkButton: Button
-    private lateinit var tabsButton: Button
-    private lateinit var settingsButton: Button
 
-    private var isHomePage = false
+    private lateinit var assetLoader: WebViewAssetLoader
 
-    override fun onCreate(savedInstanceState: Bundle?) {
+    companion object {
+
+        private const val HOME_URL =
+            "https://nexora.local/"
+
+        private const val WALLPAPER_FILE =
+            "nexora_wallpaper.jpg"
+    }
+
+    override fun onCreate(
+        savedInstanceState: Bundle?
+    ) {
         super.onCreate(savedInstanceState)
 
-        setContentView(R.layout.activity_main)
+        setContentView(
+            R.layout.activity_main
+        )
 
-        webView = findViewById(R.id.webView)
-        urlBar = findViewById(R.id.urlBar)
-        goButton = findViewById(R.id.goButton)
+        urlBar =
+            findViewById(R.id.urlBar)
 
-        backButton = findViewById(R.id.backButton)
-        forwardButton = findViewById(R.id.forwardButton)
-        homeButton = findViewById(R.id.homeButton)
-        refreshButton = findViewById(R.id.refreshButton)
-        historyButton = findViewById(R.id.historyButton)
-        bookmarkButton = findViewById(R.id.bookmarkButton)
-        tabsButton = findViewById(R.id.tabsButton)
-        settingsButton = findViewById(R.id.settingsButton)
+        webView =
+            findViewById(R.id.webView)
 
+        setupAssetLoader()
         setupWebView()
         setupButtons()
 
         val selectedUrl =
-            intent.getStringExtra("selectedUrl")
+            intent.getStringExtra(
+                "selectedUrl"
+            )
 
-        if (!selectedUrl.isNullOrEmpty()) {
-            openWebsite(selectedUrl)
+        if (
+            !selectedUrl.isNullOrEmpty()
+        ) {
+
+            webView.loadUrl(
+                selectedUrl
+            )
+
         } else {
+
             loadNexoraHome()
         }
     }
 
+    private fun setupAssetLoader() {
+
+        assetLoader =
+            WebViewAssetLoader.Builder()
+
+                .addPathHandler(
+                    "/wallpaper/",
+                    WebViewAssetLoader
+                        .InternalStoragePathHandler(
+                            this,
+                            filesDir
+                        )
+                )
+
+                .build()
+    }
+
     private fun setupWebView() {
 
-        val settings = webView.settings
+        val settings =
+            webView.settings
 
         settings.javaScriptEnabled = true
+
         settings.domStorageEnabled = true
 
-        settings.allowFileAccess = true
+        settings.loadsImagesAutomatically = true
+
+        settings.mediaPlaybackRequiresUserGesture =
+            false
+
+        settings.allowFileAccess = false
+
         settings.allowContentAccess = false
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            settings.mixedContentMode =
-                WebSettings.MIXED_CONTENT_NEVER_ALLOW
-        }
+        if (
+            android.os.Build.VERSION.SDK_INT >=
+            android.os.Build.VERSION_CODES.O
+        ) {
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             settings.safeBrowsingEnabled = true
         }
 
-        CookieManager
-            .getInstance()
-            .setAcceptThirdPartyCookies(
-                webView,
-                false
-            )
-
-        webView.webChromeClient =
-            WebChromeClient()
-
         webView.webViewClient =
-            object : WebViewClient() {
+            object : WebViewClientCompat() {
 
-                override fun shouldOverrideUrlLoading(
-                    view: WebView?,
-                    request: WebResourceRequest?
-                ): Boolean {
+                override fun shouldInterceptRequest(
+                    view: WebView,
+                    request: WebResourceRequest
+                ): WebResourceResponse? {
 
-                    val url =
-                        request?.url?.toString()
+                    return assetLoader
+                        .shouldInterceptRequest(
+                            request.url
+                        )
+                }
+
+                override fun onPageStarted(
+                    view: WebView,
+                    url: String?,
+                    favicon: Bitmap?
+                ) {
+
+                    super.onPageStarted(
+                        view,
+                        url,
+                        favicon
+                    )
 
                     if (!url.isNullOrEmpty()) {
-                        openWebsite(url)
+                        urlBar.setText(url)
                     }
-
-                    return true
                 }
 
                 override fun onPageFinished(
-                    view: WebView?,
+                    view: WebView,
                     url: String?
                 ) {
 
@@ -122,68 +155,111 @@ class MainActivity : Activity() {
                     )
 
                     if (
-                        url != null &&
-                        url != "https://nexora.local/"
+                        !url.isNullOrEmpty() &&
+                        url != HOME_URL &&
+                        !url.startsWith(
+                            "https://appassets.androidplatform.net/"
+                        )
                     ) {
 
-                        isHomePage = false
-
-                        urlBar.setText(url)
-
                         val title =
-                            view?.title ?: "Untitled"
+                            view.title
+                                ?: url
 
                         HistoryManager.add(
                             title,
                             url
                         )
-
-                        updateBookmarkButton(url)
-
-                        updateTab(
-                            title,
-                            url
-                        )
                     }
 
-                    updateNavigationButtons()
+                    if (
+                        !url.isNullOrEmpty()
+                    ) {
+                        urlBar.setText(url)
+                    }
                 }
             }
     }
 
     private fun setupButtons() {
 
+        val goButton =
+            findViewById<Button>(
+                R.id.goButton
+            )
+
+        val backButton =
+            findViewById<Button>(
+                R.id.backButton
+            )
+
+        val forwardButton =
+            findViewById<Button>(
+                R.id.forwardButton
+            )
+
+        val homeButton =
+            findViewById<Button>(
+                R.id.homeButton
+            )
+
+        val refreshButton =
+            findViewById<Button>(
+                R.id.refreshButton
+            )
+
+        val historyButton =
+            findViewById<Button>(
+                R.id.historyButton
+            )
+
+        val bookmarkButton =
+            findViewById<Button>(
+                R.id.bookmarkButton
+            )
+
+        val tabsButton =
+            findViewById<Button>(
+                R.id.tabsButton
+            )
+
+        val settingsButton =
+            findViewById<Button>(
+                R.id.settingsButton
+            )
+
         goButton.setOnClickListener {
 
-            val text =
-                urlBar.text
-                    .toString()
-                    .trim()
-
-            if (text.isNotEmpty()) {
-                openWebsite(text)
-            }
+            openWebsite(
+                urlBar.text.toString()
+            )
         }
 
         urlBar.setOnEditorActionListener {
-                _, actionId, _ ->
+                _,
+                actionId,
+                event ->
 
             if (
-                actionId == EditorInfo.IME_ACTION_GO ||
-                actionId == EditorInfo.IME_ACTION_SEARCH
+                actionId ==
+                EditorInfo.IME_ACTION_GO ||
+                actionId ==
+                EditorInfo.IME_ACTION_SEARCH ||
+                (
+                    event != null &&
+                    event.keyCode ==
+                    KeyEvent.KEYCODE_ENTER
+                )
             ) {
 
-                val text =
-                    urlBar.text
-                        .toString()
-                        .trim()
-
-                if (text.isNotEmpty()) {
-                    openWebsite(text)
-                }
+                openWebsite(
+                    urlBar.text.toString()
+                )
 
                 true
+
             } else {
+
                 false
             }
         }
@@ -203,14 +279,21 @@ class MainActivity : Activity() {
         }
 
         homeButton.setOnClickListener {
+
             loadNexoraHome()
         }
 
         refreshButton.setOnClickListener {
 
-            if (isHomePage) {
+            if (
+                webView.url ==
+                HOME_URL
+            ) {
+
                 loadNexoraHome()
+
             } else {
+
                 webView.reload()
             }
         }
@@ -228,11 +311,11 @@ class MainActivity : Activity() {
         bookmarkButton.setOnClickListener {
 
             val currentUrl =
-                webView.url
+                webView.url ?: ""
 
             if (
-                currentUrl.isNullOrEmpty() ||
-                currentUrl == "https://nexora.local/"
+                currentUrl.isEmpty() ||
+                currentUrl == HOME_URL
             ) {
 
                 Toast.makeText(
@@ -244,8 +327,9 @@ class MainActivity : Activity() {
                 return@setOnClickListener
             }
 
-            val title =
-                webView.title ?: currentUrl
+            val currentTitle =
+                webView.title
+                    ?: currentUrl
 
             if (
                 BookmarkManager
@@ -265,7 +349,7 @@ class MainActivity : Activity() {
             } else {
 
                 BookmarkManager.add(
-                    title,
+                    currentTitle,
                     currentUrl
                 )
 
@@ -275,25 +359,9 @@ class MainActivity : Activity() {
                     Toast.LENGTH_SHORT
                 ).show()
             }
-
-            updateBookmarkButton(currentUrl)
-        }
-
-        bookmarkButton.setOnLongClickListener {
-
-            startActivity(
-                Intent(
-                    this,
-                    BookmarksActivity::class.java
-                )
-            )
-
-            true
         }
 
         tabsButton.setOnClickListener {
-
-            saveCurrentTab()
 
             startActivity(
                 Intent(
@@ -314,45 +382,51 @@ class MainActivity : Activity() {
         }
     }
 
-    private fun openWebsite(input: String) {
+    private fun openWebsite(
+        input: String
+    ) {
 
-        val text = input.trim()
+        var text =
+            input.trim()
 
         if (text.isEmpty()) {
             return
         }
 
+        val url: String
+
         if (
-            text.startsWith("http://") ||
-            text.startsWith("https://")
+            text.startsWith(
+                "http://"
+            ) ||
+            text.startsWith(
+                "https://"
+            )
         ) {
 
-            webView.loadUrl(text)
-            return
-        }
+            url = text
 
-        if (
+        } else if (
             text.contains(".") &&
             !text.contains(" ")
         ) {
 
-            webView.loadUrl(
+            url =
                 "https://$text"
-            )
 
-            return
+        } else {
+
+            url =
+                "https://www.google.com/search?q=" +
+                android.net.Uri.encode(
+                    text
+                )
         }
 
-        val searchUrl =
-            "https://www.google.com/search?q=" +
-                    Uri.encode(text)
-
-        webView.loadUrl(searchUrl)
+        webView.loadUrl(url)
     }
 
     private fun loadNexoraHome() {
-
-        isHomePage = true
 
         val preferences =
             getSharedPreferences(
@@ -360,7 +434,7 @@ class MainActivity : Activity() {
                 MODE_PRIVATE
             )
 
-        val savedBackground =
+        val background =
             preferences.getString(
                 "background",
                 "cosmic"
@@ -369,494 +443,397 @@ class MainActivity : Activity() {
         val wallpaperFile =
             File(
                 filesDir,
-                "nexora_wallpaper.jpg"
+                WALLPAPER_FILE
             )
 
-        val hasCustomWallpaper =
+        val hasWallpaper =
             wallpaperFile.exists() &&
-                    wallpaperFile.length() > 0
+            wallpaperFile.length() > 0
 
         val backgroundCss =
-            if (hasCustomWallpaper) {
+            when (background) {
 
-                "url('file://${wallpaperFile.absolutePath}') " +
-                        "center center / cover no-repeat fixed"
+                "midnight" ->
+                    "linear-gradient(135deg, #050505, #151515, #000000)"
+
+                "ocean" ->
+                    "linear-gradient(135deg, #001f3f, #005f73, #001219)"
+
+                "purple" ->
+                    "linear-gradient(135deg, #16002b, #4b0082, #090014)"
+
+                else ->
+                    "linear-gradient(135deg, #020024, #090979, #00d4ff)"
+            }
+
+        val wallpaperCss =
+            if (hasWallpaper) {
+
+                """
+                background-image:
+                    linear-gradient(
+                        rgba(0, 0, 0, 0.38),
+                        rgba(0, 0, 0, 0.38)
+                    ),
+                    url(
+                        'https://appassets.androidplatform.net/wallpaper/$WALLPAPER_FILE'
+                    );
+                background-size: cover;
+                background-position: center;
+                background-repeat: no-repeat;
+                """.trimIndent()
 
             } else {
 
-                when (savedBackground) {
-
-                    "midnight" ->
-                        "linear-gradient(135deg, #000000, #333333)"
-
-                    "ocean" ->
-                        "linear-gradient(135deg, #004D40, #001B44)"
-
-                    "purple" ->
-                        "linear-gradient(135deg, #6A1B9A, #12002F)"
-
-                    else ->
-                        "linear-gradient(135deg, #1565C0, #020024)"
-                }
+                """
+                background: $backgroundCss;
+                """.trimIndent()
             }
 
-        val html = """
-<!DOCTYPE html>
+        val html =
+            """
+            <!DOCTYPE html>
 
-<html>
+            <html>
 
-<head>
+            <head>
 
-<meta name="viewport"
-      content="width=device-width,
-      initial-scale=1.0">
+                <meta
+                    name="viewport"
+                    content="width=device-width,
+                    initial-scale=1.0"
+                />
 
-<title>Nexora</title>
+                <style>
 
-<style>
+                    * {
+                        box-sizing: border-box;
+                    }
 
-* {
-    box-sizing: border-box;
-}
+                    html,
+                    body {
+                        margin: 0;
+                        padding: 0;
+                        width: 100%;
+                        height: 100%;
+                    }
 
-html,
-body {
-    width: 100%;
-    min-height: 100%;
-    margin: 0;
-}
+                    body {
 
-body {
+                        $wallpaperCss
 
-    background:
-        $backgroundCss;
+                        color: white;
 
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-attachment: fixed;
+                        font-family:
+                            Arial,
+                            sans-serif;
 
-    color: white;
+                        display: flex;
 
-    font-family:
-        Arial,
-        sans-serif;
+                        flex-direction:
+                            column;
 
-    overflow-y: auto;
-}
+                        align-items:
+                            center;
 
-.overlay {
+                        overflow-y: auto;
+                    }
 
-    min-height: 100vh;
+                    .page {
 
-    padding:
-        45px
-        20px
-        40px;
+                        width: 100%;
 
-    background:
-        linear-gradient(
-            rgba(0,0,0,0.15),
-            rgba(0,0,0,0.35)
-        );
-}
+                        max-width: 900px;
 
-.logo {
+                        min-height: 100%;
 
-    text-align: center;
+                        padding:
+                            55px
+                            20px
+                            40px;
 
-    font-size: 42px;
+                        text-align: center;
+                    }
 
-    font-weight: bold;
+                    .logo {
 
-    letter-spacing: 2px;
+                        font-size: 48px;
 
-    margin-top: 30px;
+                        font-weight: bold;
 
-    text-shadow:
-        0 4px 18px
-        rgba(0,0,0,0.6);
-}
+                        margin-top: 25px;
 
-.subtitle {
+                        margin-bottom: 8px;
 
-    text-align: center;
+                        text-shadow:
+                            0 2px 12px
+                            rgba(0,0,0,0.5);
+                    }
 
-    margin-top: 8px;
+                    .subtitle {
 
-    color:
-        rgba(255,255,255,0.8);
+                        font-size: 16px;
 
-    font-size: 14px;
-}
+                        opacity: 0.85;
 
-.search {
+                        margin-bottom: 35px;
+                    }
 
-    max-width: 650px;
+                    .search {
 
-    margin:
-        35px auto
-        30px;
+                        display: flex;
 
-    display: flex;
+                        width: 100%;
 
-    background:
-        rgba(255,255,255,0.95);
+                        max-width: 720px;
 
-    border-radius: 30px;
+                        margin:
+                            0 auto
+                            35px;
 
-    padding: 5px;
+                        background:
+                            rgba(
+                                255,
+                                255,
+                                255,
+                                0.95
+                            );
 
-    box-shadow:
-        0 10px 35px
-        rgba(0,0,0,0.3);
-}
+                        border-radius: 30px;
 
-.search input {
+                        padding: 6px;
 
-    flex: 1;
+                        box-shadow:
+                            0 8px 30px
+                            rgba(
+                                0,
+                                0,
+                                0,
+                                0.3
+                            );
+                    }
 
-    border: none;
+                    .search input {
 
-    outline: none;
+                        flex: 1;
 
-    background:
-        transparent;
+                        border: none;
 
-    padding:
-        14px
-        18px;
+                        outline: none;
 
-    font-size: 16px;
+                        background:
+                            transparent;
 
-    color: #111;
-}
+                        padding:
+                            14px
+                            18px;
 
-.search button {
+                        font-size: 16px;
 
-    border: none;
+                        color: #111;
+                    }
 
-    border-radius: 25px;
+                    .search button {
 
-    padding:
-        0 22px;
+                        border: none;
 
-    background:
-        #1565C0;
+                        border-radius: 24px;
 
-    color: white;
+                        padding:
+                            0 22px;
 
-    font-weight: bold;
-}
+                        background:
+                            #1976d2;
 
-.section-title {
+                        color: white;
 
-    max-width: 650px;
+                        font-size: 15px;
+                    }
 
-    margin:
-        25px auto
-        12px;
+                    .section {
 
-    font-size: 16px;
+                        font-size: 18px;
 
-    font-weight: bold;
-}
+                        font-weight: bold;
 
-.shortcuts {
+                        margin:
+                            25px 0
+                            15px;
+                    }
 
-    max-width: 650px;
+                    .shortcuts {
 
-    margin: auto;
+                        display: grid;
 
-    display: grid;
+                        grid-template-columns:
+                            repeat(
+                                auto-fit,
+                                minmax(
+                                    130px,
+                                    1fr
+                                )
+                            );
 
-    grid-template-columns:
-        repeat(2, 1fr);
+                        gap: 14px;
+                    }
 
-    gap: 14px;
-}
+                    .shortcut {
 
-.shortcut {
+                        display: block;
 
-    padding: 20px;
+                        text-decoration: none;
 
-    border-radius: 18px;
+                        color: white;
 
-    background:
-        rgba(255,255,255,0.13);
+                        background:
+                            rgba(
+                                255,
+                                255,
+                                255,
+                                0.14
+                            );
 
-    border:
-        1px solid
-        rgba(255,255,255,0.2);
+                        border:
+                            1px solid
+                            rgba(
+                                255,
+                                255,
+                                255,
+                                0.2
+                            );
 
-    color: white;
+                        border-radius: 18px;
 
-    text-decoration: none;
+                        padding: 20px 10px;
 
-    text-align: center;
+                        backdrop-filter:
+                            blur(8px);
 
-    font-size: 15px;
+                        font-size: 15px;
 
-    box-shadow:
-        0 8px 25px
-        rgba(0,0,0,0.15);
-}
+                        transition:
+                            transform 0.15s;
+                    }
 
-.shortcut:active {
-    transform: scale(0.97);
-}
+                    .shortcut:active {
 
-.info {
+                        transform:
+                            scale(0.96);
+                    }
 
-    max-width: 650px;
+                    .icon {
 
-    margin:
-        30px auto
-        0;
+                        font-size: 30px;
 
-    text-align: center;
+                        display: block;
 
-    color:
-        rgba(255,255,255,0.65);
+                        margin-bottom: 8px;
+                    }
 
-    font-size: 12px;
-}
+                    .footer {
 
-@media (min-width: 600px) {
+                        margin-top: 40px;
 
-    .shortcuts {
+                        opacity: 0.65;
 
-        grid-template-columns:
-            repeat(4, 1fr);
-    }
-}
+                        font-size: 12px;
+                    }
 
-</style>
+                </style>
 
-</head>
+            </head>
 
-<body>
+            <body>
 
-<div class="overlay">
+                <div class="page">
 
-<div class="logo">
-NEXORA
-</div>
+                    <div class="logo">
+                        NEXORA
+                    </div>
 
-<div class="subtitle">
-Your private gateway to the web
-</div>
+                    <div class="subtitle">
+                        Explore the web your way
+                    </div>
 
-<form
-    class="search"
-    onsubmit="searchGoogle(); return false;">
+                    <form
+                        class="search"
+                        onsubmit="searchWeb(); return false;"
+                    >
 
-<input
-    id="searchBox"
-    type="text"
-    placeholder="Search or enter address"
-    autocomplete="off">
+                        <input
+                            id="searchInput"
+                            type="text"
+                            placeholder="Search or enter address"
+                        />
 
-<button type="submit">
-Search
-</button>
+                        <button
+                            type="submit"
+                        >
+                            Search
+                        </button>
 
-</form>
+                    </form>
 
-<div class="section-title">
-Quick Access
-</div>
+                    <div class="section">
+                        Quick Access
+                    </div>
 
-<div class="shortcuts">
+                    <div class="shortcuts">
 
-<a
-    class="shortcut"
-    href="https://www.google.com">
-🔎<br>
-Google
-</a>
+                        <a
+                            class="shortcut"
+                            href="https://www.google.com"
+                        >
+                            <span class="icon">
+                                🔎
+                            </span>
+                            Google
+                        </a>
 
-<a
-    class="shortcut"
-    href="https://www.youtube.com">
-▶<br>
-YouTube
-</a>
+                        <a
+                            class="shortcut"
+                            href="https://www.youtube.com"
+                        >
+                            <span class="icon">
+                                ▶
+                            </span>
+                            YouTube
+                        </a>
 
-<a
-    class="shortcut"
-    href="https://www.wikipedia.org">
-📚<br>
-Wikipedia
-</a>
+                        <a
+                            class="shortcut"
+                            href="https://www.facebook.com"
+                        >
+                            <span class="icon">
+                                f
+                            </span>
+                            Facebook
+                        </a>
 
-<a
-    class="shortcut"
-    href="https://github.com">
-💻<br>
-GitHub
-</a>
+                        <a
+                            class="shortcut"
+                            href="https://www.instagram.com"
+                        >
+                            <span class="icon">
+                                ◎
+                            </span>
+                            Instagram
+                        </a>
 
-</div>
+                        <a
+                            class="shortcut"
+                            href="https://www.wikipedia.org"
+                        >
+                            <span class="icon">
+                                W
+                            </span>
+                            Wikipedia
+                        </a>
 
-<div class="info">
-Nexora Browser
-<br>
-Fast • Private • Simple
-</div>
-
-</div>
-
-<script>
-
-function searchGoogle() {
-
-    var value =
-        document
-        .getElementById("searchBox")
-        .value
-        .trim();
-
-    if (value.length === 0) {
-        return;
-    }
-
-    var url =
-        "https://www.google.com/search?q=" +
-        encodeURIComponent(value);
-
-    window.location.href = url;
-}
-
-</script>
-
-</body>
-
-</html>
-"""
-
-        webView.settings.allowFileAccess = true
-
-        webView.loadDataWithBaseURL(
-            "file://${filesDir.absolutePath}/",
-            html,
-            "text/html",
-            "UTF-8",
-            null
-        )
-
-        urlBar.setText("Nexora Home")
-
-        bookmarkButton.text = "☆"
-
-        updateNavigationButtons()
-    }
-
-    private fun updateBookmarkButton(
-        url: String
-    ) {
-
-        if (
-            BookmarkManager
-                .isBookmarked(url)
-        ) {
-
-            bookmarkButton.text = "★"
-
-        } else {
-
-            bookmarkButton.text = "☆"
-        }
-    }
-
-    private fun updateNavigationButtons() {
-
-        backButton.isEnabled =
-            webView.canGoBack()
-
-        forwardButton.isEnabled =
-            webView.canGoForward()
-    }
-
-    private fun updateTab(
-        title: String,
-        url: String
-    ) {
-
-        if (TabManager.tabs.isEmpty()) {
-            TabManager.initialize()
-        }
-
-        val current =
-            TabManager.currentTab()
-
-        current.title =
-            title.ifEmpty {
-                "Nexora"
-            }
-
-        current.url = url
-    }
-
-    private fun saveCurrentTab() {
-
-        if (TabManager.tabs.isEmpty()) {
-            TabManager.initialize()
-        }
-
-        val current =
-            TabManager.currentTab()
-
-        val currentUrl =
-            webView.url
-
-        if (!currentUrl.isNullOrEmpty()) {
-
-            current.url =
-                currentUrl
-
-            current.title =
-                webView.title
-                    ?: current.title
-        }
-    }
-
-    override fun onResume() {
-
-        super.onResume()
-
-        if (::webView.isInitialized) {
-
-            val currentUrl =
-                webView.url
-
-            if (
-                currentUrl ==
-                "https://nexora.local/"
-            ) {
-
-                loadNexoraHome()
-            }
-        }
-    }
-
-    override fun onBackPressed() {
-
-        if (webView.canGoBack()) {
-
-            webView.goBack()
-
-        } else {
-
-            super.onBackPressed()
-        }
-    }
-
-    override fun onDestroy() {
-
-        webView.stopLoading()
-        webView.destroy()
-
-        super.onDestroy()
-    }
-}
+                        <a
+                            class="shortcut"
+                            href="https://www.github.com"
+                        >
+                            <span class="icon">
+                                ◉
+       
