@@ -1,5 +1,6 @@
 plugins {
     id("com.android.application")
+    id("org.jetbrains.kotlin.android")
 }
 
 android {
@@ -13,4 +14,8 @@ android {
         versionCode = 1
         versionName = "1.0"
     }
+}
+
+dependencies {
+    implementation("androidx.webkit:webkit:1.13.0")
 }
