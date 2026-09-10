@@ -2,7 +2,6 @@ package com.mybrowser
 
 import android.app.Activity
 import android.content.Intent
-import android.graphics.Color
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -30,7 +29,7 @@ class MainActivity : Activity() {
     private lateinit var historyButton: Button
     private lateinit var bookmarkButton: Button
     private lateinit var tabsButton: Button
-    private lateinit var settingsButton
+    private lateinit var settingsButton: Button
 
     private var isHomePage = false
 
@@ -72,10 +71,6 @@ class MainActivity : Activity() {
         settings.javaScriptEnabled = true
         settings.domStorageEnabled = true
 
-        /*
-         * Needed for Nexora's private wallpaper file.
-         * File access is enabled, but content:// access remains disabled.
-         */
         settings.allowFileAccess = true
         settings.allowContentAccess = false
 
@@ -188,7 +183,6 @@ class MainActivity : Activity() {
                 }
 
                 true
-
             } else {
                 false
             }
@@ -282,9 +276,7 @@ class MainActivity : Activity() {
                 ).show()
             }
 
-            updateBookmarkButton(
-                currentUrl
-            )
+            updateBookmarkButton(currentUrl)
         }
 
         bookmarkButton.setOnLongClickListener {
@@ -324,7 +316,7 @@ class MainActivity : Activity() {
 
     private fun openWebsite(input: String) {
 
-        var text = input.trim()
+        val text = input.trim()
 
         if (text.isEmpty()) {
             return
@@ -336,7 +328,6 @@ class MainActivity : Activity() {
         ) {
 
             webView.loadUrl(text)
-
             return
         }
 
@@ -345,9 +336,9 @@ class MainActivity : Activity() {
             !text.contains(" ")
         ) {
 
-            text = "https://$text"
-
-            webView.loadUrl(text)
+            webView.loadUrl(
+                "https://$text"
+            )
 
             return
         }
@@ -375,10 +366,6 @@ class MainActivity : Activity() {
                 "cosmic"
             )
 
-        /*
-         * The wallpaper is copied by SettingsActivity
-         * into the application's private files directory.
-         */
         val wallpaperFile =
             File(
                 filesDir,
@@ -447,7 +434,6 @@ body {
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
-
     background-attachment: fixed;
 
     color: white;
@@ -617,9 +603,7 @@ body {
 }
 
 .shortcut:active {
-
-    transform:
-        scale(0.97);
+    transform: scale(0.97);
 }
 
 .info {
@@ -751,9 +735,6 @@ function searchGoogle() {
 </html>
 """
 
-        /*
-         * Allow the WebView to load the private local file.
-         */
         webView.settings.allowFileAccess = true
 
         webView.loadDataWithBaseURL(
