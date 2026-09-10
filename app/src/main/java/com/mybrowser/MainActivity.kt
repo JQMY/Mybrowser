@@ -62,9 +62,13 @@ class MainActivity : Activity() {
                     view: WebView?,
                     url: String?
                 ) {
-                    super.onPageFinished(view, url)
+                    super.onPageFinished(
+                        view,
+                        url
+                    )
 
-                    if (url != null &&
+                    if (
+                        url != null &&
                         !url.startsWith(
                             "https://nexora.local"
                         )
@@ -91,29 +95,33 @@ class MainActivity : Activity() {
             }
 
         val selectedUrl =
-            intent.getStringExtra("selectedUrl")
+            intent.getStringExtra(
+                "selectedUrl"
+            )
 
         if (selectedUrl != null) {
 
-            webView.loadUrl(selectedUrl)
+            webView.loadUrl(
+                selectedUrl
+            )
 
         } else {
 
             loadNexoraHome()
         }
 
-        // Go
         goButton.setOnClickListener {
             openWebsite()
         }
 
-        // Keyboard search
-        urlBar.setOnEditorActionListener { _, _, _ ->
+        urlBar.setOnEditorActionListener {
+                _, _, _ ->
+
             openWebsite()
+
             true
         }
 
-        // Back
         backButton.setOnClickListener {
 
             if (webView.canGoBack()) {
@@ -121,7 +129,6 @@ class MainActivity : Activity() {
             }
         }
 
-        // Forward
         forwardButton.setOnClickListener {
 
             if (webView.canGoForward()) {
@@ -129,17 +136,14 @@ class MainActivity : Activity() {
             }
         }
 
-        // Home
         homeButton.setOnClickListener {
             loadNexoraHome()
         }
 
-        // Refresh
         refreshButton.setOnClickListener {
             webView.reload()
         }
 
-        // History
         historyButton.setOnClickListener {
 
             startActivity(
@@ -150,7 +154,6 @@ class MainActivity : Activity() {
             )
         }
 
-        // Bookmark
         bookmarkButton.setOnClickListener {
 
             val currentTab =
@@ -177,7 +180,6 @@ class MainActivity : Activity() {
             updateBookmarkButton()
         }
 
-        // Long press bookmark
         bookmarkButton.setOnLongClickListener {
 
             startActivity(
@@ -190,7 +192,6 @@ class MainActivity : Activity() {
             true
         }
 
-        // Tabs
         tabsButton.setOnClickListener {
 
             startActivity(
@@ -201,7 +202,6 @@ class MainActivity : Activity() {
             )
         }
 
-        // Settings
         settingsButton.setOnClickListener {
 
             startActivity(
@@ -224,19 +224,23 @@ class MainActivity : Activity() {
         settings.allowFileAccess = false
         settings.allowContentAccess = false
 
-        if (Build.VERSION.SDK_INT >=
+        if (
+            Build.VERSION.SDK_INT >=
             Build.VERSION_CODES.LOLLIPOP
         ) {
 
             settings.mixedContentMode =
-                WebSettings.MIXED_CONTENT_NEVER_ALLOW
+                WebSettings
+                    .MIXED_CONTENT_NEVER_ALLOW
         }
 
-        if (Build.VERSION.SDK_INT >=
+        if (
+            Build.VERSION.SDK_INT >=
             Build.VERSION_CODES.O
         ) {
 
-            settings.safeBrowsingEnabled = true
+            settings.safeBrowsingEnabled =
+                true
         }
 
         CookieManager
@@ -247,10 +251,83 @@ class MainActivity : Activity() {
             )
     }
 
+    private fun getBackground(): String {
+
+        val preferences =
+            getSharedPreferences(
+                "nexora_settings",
+                MODE_PRIVATE
+            )
+
+        return preferences.getString(
+            "background",
+            "cosmic"
+        ) ?: "cosmic"
+    }
+
+    private fun getBackgroundCss(): String {
+
+        return when (getBackground()) {
+
+            "midnight" -> {
+                """
+                background:
+                radial-gradient(
+                    circle at 50% 0%,
+                    #202020 0%,
+                    #0d0d0d 40%,
+                    #020202 100%
+                );
+                """.trimIndent()
+            }
+
+            "ocean" -> {
+                """
+                background:
+                radial-gradient(
+                    circle at 50% 0%,
+                    #087f9b 0%,
+                    #063c61 40%,
+                    #021522 100%
+                );
+                """.trimIndent()
+            }
+
+            "purple" -> {
+                """
+                background:
+                radial-gradient(
+                    circle at 50% 0%,
+                    #7c35a8 0%,
+                    #35165c 40%,
+                    #0b0315 100%
+                );
+                """.trimIndent()
+            }
+
+            else -> {
+                """
+                background:
+                radial-gradient(
+                    circle at 50% 0%,
+                    #315fc4 0%,
+                    #121f55 35%,
+                    #070b24 70%,
+                    #02030e 100%
+                );
+                """.trimIndent()
+            }
+        }
+    }
+
     private fun loadNexoraHome() {
+
+        val background =
+            getBackgroundCss()
 
         val html = """
 <!DOCTYPE html>
+
 <html>
 
 <head>
@@ -267,39 +344,44 @@ initial-scale=1.0">
 
 body {
     margin: 0;
+
     min-height: 100vh;
+
     font-family: sans-serif;
+
     color: white;
 
-    background:
-    radial-gradient(
-        circle at 50% 0%,
-        #315fc4 0%,
-        #121f55 35%,
-        #070b24 70%,
-        #02030e 100%
-    );
+    $background
+
+    overflow-x: hidden;
 }
 
 .container {
     max-width: 720px;
+
     margin: auto;
+
     padding: 38px 20px;
+
     text-align: center;
 }
 
 .logo {
     width: 90px;
     height: 90px;
+
     margin: auto;
 
     border-radius: 28px;
 
     display: flex;
+
     align-items: center;
+
     justify-content: center;
 
     font-size: 60px;
+
     font-weight: bold;
 
     background:
@@ -309,18 +391,29 @@ body {
         #407cff,
         #b04cff
     );
+
+    box-shadow:
+    0 0 30px
+    rgba(0,200,255,0.35);
 }
 
 .brand {
     margin-top: 14px;
+
     font-size: 42px;
+
     font-weight: bold;
+
+    letter-spacing: 2px;
 }
 
 .tagline {
     margin-top: 5px;
+
     font-size: 13px;
+
     letter-spacing: 6px;
+
     color: #c9d5ff;
 }
 
@@ -341,9 +434,11 @@ body {
 
 .search {
     width: 100%;
+
     height: 60px;
 
     display: flex;
+
     align-items: center;
 
     padding: 5px;
@@ -355,9 +450,11 @@ body {
 
 .search input {
     flex: 1;
+
     height: 50px;
 
     border: none;
+
     outline: none;
 
     padding: 0 20px;
@@ -367,12 +464,15 @@ body {
 
 .search button {
     width: 50px;
+
     height: 50px;
 
     border: none;
+
     border-radius: 50%;
 
     background: #101a40;
+
     color: white;
 
     font-size: 22px;
@@ -384,6 +484,7 @@ body {
     text-align: left;
 
     color: #b7c5f5;
+
     font-size: 15px;
 }
 
@@ -411,11 +512,13 @@ body {
     rgba(255,255,255,0.12);
 
     text-decoration: none;
+
     color: white;
 }
 
 .icon {
     width: 52px;
+
     height: 52px;
 
     margin: auto;
@@ -423,7 +526,9 @@ body {
     border-radius: 16px;
 
     display: flex;
+
     align-items: center;
+
     justify-content: center;
 
     background:
@@ -434,6 +539,7 @@ body {
 
 .name {
     margin-top: 8px;
+
     font-size: 12px;
 }
 
@@ -452,6 +558,7 @@ body {
 
 .info-small {
     color: #9eaddc;
+
     font-size: 12px;
 }
 
@@ -459,6 +566,7 @@ body {
     margin-top: 7px;
 
     font-size: 23px;
+
     font-weight: bold;
 }
 
@@ -466,6 +574,7 @@ body {
     margin-top: 30px;
 
     color: #7786b9;
+
     font-size: 12px;
 }
 
