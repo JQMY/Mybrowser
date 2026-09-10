@@ -6,7 +6,6 @@ import android.graphics.Color
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.webkit.CookieManager
 import android.webkit.WebChromeClient
@@ -17,6 +16,7 @@ import android.webkit.WebViewClient
 import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
+import java.io.File
 
 class MainActivity : Activity() {
 
@@ -30,7 +30,7 @@ class MainActivity : Activity() {
     private lateinit var historyButton: Button
     private lateinit var bookmarkButton: Button
     private lateinit var tabsButton: Button
-    private lateinit var settingsButton: Button
+    private lateinit var settingsButton
 
     private var isHomePage = false
 
@@ -72,7 +72,11 @@ class MainActivity : Activity() {
         settings.javaScriptEnabled = true
         settings.domStorageEnabled = true
 
-        settings.allowFileAccess = false
+        /*
+         * Needed for Nexora's private wallpaper file.
+         * File access is enabled, but content:// access remains disabled.
+         */
+        settings.allowFileAccess = true
         settings.allowContentAccess = false
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -122,7 +126,8 @@ class MainActivity : Activity() {
                         url
                     )
 
-                    if (url != null &&
+                    if (
+                        url != null &&
                         url != "https://nexora.local/"
                     ) {
 
@@ -131,17 +136,14 @@ class MainActivity : Activity() {
                         urlBar.setText(url)
 
                         val title =
-                            view?.title
-                                ?: "Untitled"
+                            view?.title ?: "Untitled"
 
                         HistoryManager.add(
                             title,
                             url
                         )
 
-                        updateBookmarkButton(
-                            url
-                        )
+                        updateBookmarkButton(url)
 
                         updateTab(
                             title,
@@ -172,10 +174,8 @@ class MainActivity : Activity() {
                 _, actionId, _ ->
 
             if (
-                actionId ==
-                EditorInfo.IME_ACTION_GO ||
-                actionId ==
-                EditorInfo.IME_ACTION_SEARCH
+                actionId == EditorInfo.IME_ACTION_GO ||
+                actionId == EditorInfo.IME_ACTION_SEARCH
             ) {
 
                 val text =
@@ -238,9 +238,9 @@ class MainActivity : Activity() {
 
             if (
                 currentUrl.isNullOrEmpty() ||
-                currentUrl ==
-                "https://nexora.local/"
+                currentUrl == "https://nexora.local/"
             ) {
+
                 Toast.makeText(
                     this,
                     "Open a website first",
@@ -251,8 +251,7 @@ class MainActivity : Activity() {
             }
 
             val title =
-                webView.title
-                    ?: currentUrl
+                webView.title ?: currentUrl
 
             if (
                 BookmarkManager
@@ -346,8 +345,7 @@ class MainActivity : Activity() {
             !text.contains(" ")
         ) {
 
-            text =
-                "https://$text"
+            text = "https://$text"
 
             webView.loadUrl(text)
 
@@ -358,9 +356,7 @@ class MainActivity : Activity() {
             "https://www.google.com/search?q=" +
                     Uri.encode(text)
 
-        webView.loadUrl(
-            searchUrl
-        )
+        webView.loadUrl(searchUrl)
     }
 
     private fun loadNexoraHome() {
@@ -379,20 +375,25 @@ class MainActivity : Activity() {
                 "cosmic"
             )
 
-        val savedWallpaper =
-            preferences.getString(
-                "wallpaperUri",
-                null
+        /*
+         * The wallpaper is copied by SettingsActivity
+         * into the application's private files directory.
+         */
+        val wallpaperFile =
+            File(
+                filesDir,
+                "nexora_wallpaper.jpg"
             )
 
-        val backgroundCss =
-            if (!savedWallpaper.isNullOrEmpty()) {
+        val hasCustomWallpaper =
+            wallpaperFile.exists() &&
+                    wallpaperFile.length() > 0
 
-                """
-                #080B18 url('$savedWallpaper')
-                center center / cover
-                no-repeat fixed
-                """
+        val backgroundCss =
+            if (hasCustomWallpaper) {
+
+                "url('file://${wallpaperFile.absolutePath}') " +
+                        "center center / cover no-repeat fixed"
 
             } else {
 
@@ -434,7 +435,7 @@ class MainActivity : Activity() {
 html,
 body {
     width: 100%;
-    height: 100%;
+    min-height: 100%;
     margin: 0;
 }
 
@@ -446,6 +447,8 @@ body {
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
+
+    background-attachment: fixed;
 
     color: white;
 
@@ -600,9 +603,6 @@ body {
         1px solid
         rgba(255,255,255,0.2);
 
-    backdrop-filter:
-        blur(12px);
-
     color: white;
 
     text-decoration: none;
@@ -708,7 +708,7 @@ Wikipedia
 
 <a
     class="shortcut"
-    href="https://www.github.com">
+    href="https://github.com">
 💻<br>
 GitHub
 </a>
@@ -751,17 +751,20 @@ function searchGoogle() {
 </html>
 """
 
+        /*
+         * Allow the WebView to load the private local file.
+         */
+        webView.settings.allowFileAccess = true
+
         webView.loadDataWithBaseURL(
-            "https://nexora.local/",
+            "file://${filesDir.absolutePath}/",
             html,
             "text/html",
             "UTF-8",
             null
         )
 
-        urlBar.setText(
-            "Nexora Home"
-        )
+        urlBar.setText("Nexora Home")
 
         bookmarkButton.text = "☆"
 
@@ -799,9 +802,7 @@ function searchGoogle() {
         url: String
     ) {
 
-        if (
-            TabManager.tabs.isEmpty()
-        ) {
+        if (TabManager.tabs.isEmpty()) {
             TabManager.initialize()
         }
 
@@ -818,9 +819,7 @@ function searchGoogle() {
 
     private fun saveCurrentTab() {
 
-        if (
-            TabManager.tabs.isEmpty()
-        ) {
+        if (TabManager.tabs.isEmpty()) {
             TabManager.initialize()
         }
 
@@ -845,9 +844,7 @@ function searchGoogle() {
 
         super.onResume()
 
-        if (
-            ::webView.isInitialized
-        ) {
+        if (::webView.isInitialized) {
 
             val currentUrl =
                 webView.url
