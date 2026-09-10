@@ -2,19 +2,37 @@ package com.mybrowser
 
 import android.app.Activity
 import android.content.Intent
+import android.graphics.Color
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.view.View
+import android.view.inputmethod.EditorInfo
 import android.webkit.CookieManager
+import android.webkit.WebChromeClient
+import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Button
 import android.widget.EditText
+import android.widget.Toast
 
 class MainActivity : Activity() {
 
     private lateinit var webView: WebView
     private lateinit var urlBar: EditText
+    private lateinit var goButton: Button
+    private lateinit var backButton: Button
+    private lateinit var forwardButton: Button
+    private lateinit var homeButton: Button
+    private lateinit var refreshButton: Button
+    private lateinit var historyButton: Button
+    private lateinit var bookmarkButton: Button
+    private lateinit var tabsButton: Button
+    private lateinit var settingsButton: Button
+
+    private var isHomePage = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -23,103 +41,157 @@ class MainActivity : Activity() {
 
         webView = findViewById(R.id.webView)
         urlBar = findViewById(R.id.urlBar)
+        goButton = findViewById(R.id.goButton)
 
-        val goButton: Button =
-            findViewById(R.id.goButton)
+        backButton = findViewById(R.id.backButton)
+        forwardButton = findViewById(R.id.forwardButton)
+        homeButton = findViewById(R.id.homeButton)
+        refreshButton = findViewById(R.id.refreshButton)
+        historyButton = findViewById(R.id.historyButton)
+        bookmarkButton = findViewById(R.id.bookmarkButton)
+        tabsButton = findViewById(R.id.tabsButton)
+        settingsButton = findViewById(R.id.settingsButton)
 
-        val backButton: Button =
-            findViewById(R.id.backButton)
+        setupWebView()
+        setupButtons()
 
-        val forwardButton: Button =
-            findViewById(R.id.forwardButton)
+        val selectedUrl =
+            intent.getStringExtra("selectedUrl")
 
-        val homeButton: Button =
-            findViewById(R.id.homeButton)
+        if (!selectedUrl.isNullOrEmpty()) {
+            openWebsite(selectedUrl)
+        } else {
+            loadNexoraHome()
+        }
+    }
 
-        val refreshButton: Button =
-            findViewById(R.id.refreshButton)
+    private fun setupWebView() {
 
-        val historyButton: Button =
-            findViewById(R.id.historyButton)
+        val settings = webView.settings
 
-        val bookmarkButton: Button =
-            findViewById(R.id.bookmarkButton)
+        settings.javaScriptEnabled = true
+        settings.domStorageEnabled = true
 
-        val tabsButton: Button =
-            findViewById(R.id.tabsButton)
+        settings.allowFileAccess = false
+        settings.allowContentAccess = false
 
-        val settingsButton: Button =
-            findViewById(R.id.settingsButton)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            settings.mixedContentMode =
+                WebSettings.MIXED_CONTENT_NEVER_ALLOW
+        }
 
-        TabManager.initialize()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            settings.safeBrowsingEnabled = true
+        }
 
-        configureBrowser()
+        CookieManager
+            .getInstance()
+            .setAcceptThirdPartyCookies(
+                webView,
+                false
+            )
+
+        webView.webChromeClient =
+            WebChromeClient()
 
         webView.webViewClient =
             object : WebViewClient() {
+
+                override fun shouldOverrideUrlLoading(
+                    view: WebView?,
+                    request: WebResourceRequest?
+                ): Boolean {
+
+                    val url =
+                        request?.url?.toString()
+
+                    if (!url.isNullOrEmpty()) {
+                        openWebsite(url)
+                    }
+
+                    return true
+                }
 
                 override fun onPageFinished(
                     view: WebView?,
                     url: String?
                 ) {
+
                     super.onPageFinished(
                         view,
                         url
                     )
 
-                    if (
-                        url != null &&
-                        !url.startsWith(
-                            "https://nexora.local"
-                        )
+                    if (url != null &&
+                        url != "https://nexora.local/"
                     ) {
 
-                        val currentTab =
-                            TabManager.currentTab()
-
-                        currentTab.url = url
-
-                        currentTab.title =
-                            view?.title ?: "New Tab"
+                        isHomePage = false
 
                         urlBar.setText(url)
 
+                        val title =
+                            view?.title
+                                ?: "Untitled"
+
                         HistoryManager.add(
-                            currentTab.title,
+                            title,
                             url
                         )
 
-                        updateBookmarkButton()
+                        updateBookmarkButton(
+                            url
+                        )
+
+                        updateTab(
+                            title,
+                            url
+                        )
                     }
+
+                    updateNavigationButtons()
                 }
             }
+    }
 
-        val selectedUrl =
-            intent.getStringExtra(
-                "selectedUrl"
-            )
-
-        if (selectedUrl != null) {
-
-            webView.loadUrl(
-                selectedUrl
-            )
-
-        } else {
-
-            loadNexoraHome()
-        }
+    private fun setupButtons() {
 
         goButton.setOnClickListener {
-            openWebsite()
+
+            val text =
+                urlBar.text
+                    .toString()
+                    .trim()
+
+            if (text.isNotEmpty()) {
+                openWebsite(text)
+            }
         }
 
         urlBar.setOnEditorActionListener {
-                _, _, _ ->
+                _, actionId, _ ->
 
-            openWebsite()
+            if (
+                actionId ==
+                EditorInfo.IME_ACTION_GO ||
+                actionId ==
+                EditorInfo.IME_ACTION_SEARCH
+            ) {
 
-            true
+                val text =
+                    urlBar.text
+                        .toString()
+                        .trim()
+
+                if (text.isNotEmpty()) {
+                    openWebsite(text)
+                }
+
+                true
+
+            } else {
+                false
+            }
         }
 
         backButton.setOnClickListener {
@@ -141,7 +213,12 @@ class MainActivity : Activity() {
         }
 
         refreshButton.setOnClickListener {
-            webView.reload()
+
+            if (isHomePage) {
+                loadNexoraHome()
+            } else {
+                webView.reload()
+            }
         }
 
         historyButton.setOnClickListener {
@@ -156,28 +233,59 @@ class MainActivity : Activity() {
 
         bookmarkButton.setOnClickListener {
 
-            val currentTab =
-                TabManager.currentTab()
+            val currentUrl =
+                webView.url
 
             if (
-                BookmarkManager.isBookmarked(
-                    currentTab.url
-                )
+                currentUrl.isNullOrEmpty() ||
+                currentUrl ==
+                "https://nexora.local/"
+            ) {
+                Toast.makeText(
+                    this,
+                    "Open a website first",
+                    Toast.LENGTH_SHORT
+                ).show()
+
+                return@setOnClickListener
+            }
+
+            val title =
+                webView.title
+                    ?: currentUrl
+
+            if (
+                BookmarkManager
+                    .isBookmarked(currentUrl)
             ) {
 
                 BookmarkManager.remove(
-                    currentTab.url
+                    currentUrl
                 )
+
+                Toast.makeText(
+                    this,
+                    "Bookmark removed",
+                    Toast.LENGTH_SHORT
+                ).show()
 
             } else {
 
                 BookmarkManager.add(
-                    currentTab.title,
-                    currentTab.url
+                    title,
+                    currentUrl
                 )
+
+                Toast.makeText(
+                    this,
+                    "Bookmark saved",
+                    Toast.LENGTH_SHORT
+                ).show()
             }
 
-            updateBookmarkButton()
+            updateBookmarkButton(
+                currentUrl
+            )
         }
 
         bookmarkButton.setOnLongClickListener {
@@ -193,6 +301,8 @@ class MainActivity : Activity() {
         }
 
         tabsButton.setOnClickListener {
+
+            saveCurrentTab()
 
             startActivity(
                 Intent(
@@ -213,45 +323,49 @@ class MainActivity : Activity() {
         }
     }
 
-    private fun configureBrowser() {
+    private fun openWebsite(input: String) {
 
-        val settings =
-            webView.settings
+        var text = input.trim()
 
-        settings.javaScriptEnabled = true
-        settings.domStorageEnabled = true
-
-        settings.allowFileAccess = false
-        settings.allowContentAccess = false
-
-        if (
-            Build.VERSION.SDK_INT >=
-            Build.VERSION_CODES.LOLLIPOP
-        ) {
-
-            settings.mixedContentMode =
-                WebSettings
-                    .MIXED_CONTENT_NEVER_ALLOW
+        if (text.isEmpty()) {
+            return
         }
 
         if (
-            Build.VERSION.SDK_INT >=
-            Build.VERSION_CODES.O
+            text.startsWith("http://") ||
+            text.startsWith("https://")
         ) {
 
-            settings.safeBrowsingEnabled =
-                true
+            webView.loadUrl(text)
+
+            return
         }
 
-        CookieManager
-            .getInstance()
-            .setAcceptThirdPartyCookies(
-                webView,
-                false
-            )
+        if (
+            text.contains(".") &&
+            !text.contains(" ")
+        ) {
+
+            text =
+                "https://$text"
+
+            webView.loadUrl(text)
+
+            return
+        }
+
+        val searchUrl =
+            "https://www.google.com/search?q=" +
+                    Uri.encode(text)
+
+        webView.loadUrl(
+            searchUrl
+        )
     }
 
-    private fun getBackground(): String {
+    private fun loadNexoraHome() {
+
+        isHomePage = true
 
         val preferences =
             getSharedPreferences(
@@ -259,71 +373,44 @@ class MainActivity : Activity() {
                 MODE_PRIVATE
             )
 
-        return preferences.getString(
-            "background",
-            "cosmic"
-        ) ?: "cosmic"
-    }
+        val savedBackground =
+            preferences.getString(
+                "background",
+                "cosmic"
+            )
 
-    private fun getBackgroundCss(): String {
+        val savedWallpaper =
+            preferences.getString(
+                "wallpaperUri",
+                null
+            )
 
-        return when (getBackground()) {
+        val backgroundCss =
+            if (!savedWallpaper.isNullOrEmpty()) {
 
-            "midnight" -> {
                 """
-                background:
-                radial-gradient(
-                    circle at 50% 0%,
-                    #202020 0%,
-                    #0d0d0d 40%,
-                    #020202 100%
-                );
-                """.trimIndent()
-            }
-
-            "ocean" -> {
+                #080B18 url('$savedWallpaper')
+                center center / cover
+                no-repeat fixed
                 """
-                background:
-                radial-gradient(
-                    circle at 50% 0%,
-                    #087f9b 0%,
-                    #063c61 40%,
-                    #021522 100%
-                );
-                """.trimIndent()
+
+            } else {
+
+                when (savedBackground) {
+
+                    "midnight" ->
+                        "linear-gradient(135deg, #000000, #333333)"
+
+                    "ocean" ->
+                        "linear-gradient(135deg, #004D40, #001B44)"
+
+                    "purple" ->
+                        "linear-gradient(135deg, #6A1B9A, #12002F)"
+
+                    else ->
+                        "linear-gradient(135deg, #1565C0, #020024)"
+                }
             }
-
-            "purple" -> {
-                """
-                background:
-                radial-gradient(
-                    circle at 50% 0%,
-                    #7c35a8 0%,
-                    #35165c 40%,
-                    #0b0315 100%
-                );
-                """.trimIndent()
-            }
-
-            else -> {
-                """
-                background:
-                radial-gradient(
-                    circle at 50% 0%,
-                    #315fc4 0%,
-                    #121f55 35%,
-                    #070b24 70%,
-                    #02030e 100%
-                );
-                """.trimIndent()
-            }
-        }
-    }
-
-    private fun loadNexoraHome() {
-
-        val background =
-            getBackgroundCss()
 
         val html = """
 <!DOCTYPE html>
@@ -333,8 +420,10 @@ class MainActivity : Activity() {
 <head>
 
 <meta name="viewport"
-content="width=device-width,
-initial-scale=1.0">
+      content="width=device-width,
+      initial-scale=1.0">
+
+<title>Nexora</title>
 
 <style>
 
@@ -342,240 +431,220 @@ initial-scale=1.0">
     box-sizing: border-box;
 }
 
+html,
 body {
+    width: 100%;
+    height: 100%;
     margin: 0;
+}
 
-    min-height: 100vh;
+body {
 
-    font-family: sans-serif;
+    background:
+        $backgroundCss;
+
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
 
     color: white;
 
-    $background
+    font-family:
+        Arial,
+        sans-serif;
 
-    overflow-x: hidden;
+    overflow-y: auto;
 }
 
-.container {
-    max-width: 720px;
+.overlay {
 
-    margin: auto;
+    min-height: 100vh;
 
-    padding: 38px 20px;
+    padding:
+        45px
+        20px
+        40px;
 
-    text-align: center;
+    background:
+        linear-gradient(
+            rgba(0,0,0,0.15),
+            rgba(0,0,0,0.35)
+        );
 }
 
 .logo {
-    width: 90px;
-    height: 90px;
 
-    margin: auto;
-
-    border-radius: 28px;
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    font-size: 60px;
-
-    font-weight: bold;
-
-    background:
-    linear-gradient(
-        145deg,
-        #00eaff,
-        #407cff,
-        #b04cff
-    );
-
-    box-shadow:
-    0 0 30px
-    rgba(0,200,255,0.35);
-}
-
-.brand {
-    margin-top: 14px;
+    text-align: center;
 
     font-size: 42px;
 
     font-weight: bold;
 
     letter-spacing: 2px;
+
+    margin-top: 30px;
+
+    text-shadow:
+        0 4px 18px
+        rgba(0,0,0,0.6);
 }
 
-.tagline {
-    margin-top: 5px;
+.subtitle {
 
-    font-size: 13px;
+    text-align: center;
 
-    letter-spacing: 6px;
+    margin-top: 8px;
 
-    color: #c9d5ff;
-}
+    color:
+        rgba(255,255,255,0.8);
 
-.status {
-    margin: 24px auto;
-
-    display: inline-block;
-
-    padding: 10px 18px;
-
-    border-radius: 22px;
-
-    background:
-    rgba(255,255,255,0.08);
-
-    color: #dce5ff;
+    font-size: 14px;
 }
 
 .search {
-    width: 100%;
 
-    height: 60px;
+    max-width: 650px;
+
+    margin:
+        35px auto
+        30px;
 
     display: flex;
 
-    align-items: center;
+    background:
+        rgba(255,255,255,0.95);
+
+    border-radius: 30px;
 
     padding: 5px;
 
-    border-radius: 32px;
-
-    background: white;
+    box-shadow:
+        0 10px 35px
+        rgba(0,0,0,0.3);
 }
 
 .search input {
-    flex: 1;
 
-    height: 50px;
+    flex: 1;
 
     border: none;
 
     outline: none;
 
-    padding: 0 20px;
+    background:
+        transparent;
+
+    padding:
+        14px
+        18px;
 
     font-size: 16px;
+
+    color: #111;
 }
 
 .search button {
-    width: 50px;
-
-    height: 50px;
 
     border: none;
 
-    border-radius: 50%;
+    border-radius: 25px;
 
-    background: #101a40;
+    padding:
+        0 22px;
+
+    background:
+        #1565C0;
 
     color: white;
-
-    font-size: 22px;
-}
-
-.section {
-    margin-top: 32px;
-
-    text-align: left;
-
-    color: #b7c5f5;
-
-    font-size: 15px;
-}
-
-.shortcuts {
-    display: grid;
-
-    grid-template-columns:
-    repeat(3, 1fr);
-
-    gap: 12px;
-
-    margin-top: 14px;
-}
-
-.shortcut {
-    padding: 15px 6px;
-
-    border-radius: 20px;
-
-    background:
-    rgba(255,255,255,0.07);
-
-    border:
-    1px solid
-    rgba(255,255,255,0.12);
-
-    text-decoration: none;
-
-    color: white;
-}
-
-.icon {
-    width: 52px;
-
-    height: 52px;
-
-    margin: auto;
-
-    border-radius: 16px;
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    background:
-    rgba(255,255,255,0.12);
-
-    font-size: 24px;
-}
-
-.name {
-    margin-top: 8px;
-
-    font-size: 12px;
-}
-
-.info {
-    margin-top: 28px;
-
-    padding: 18px;
-
-    border-radius: 20px;
-
-    text-align: left;
-
-    background:
-    rgba(255,255,255,0.07);
-}
-
-.info-small {
-    color: #9eaddc;
-
-    font-size: 12px;
-}
-
-.info-large {
-    margin-top: 7px;
-
-    font-size: 23px;
 
     font-weight: bold;
 }
 
-.footer {
-    margin-top: 30px;
+.section-title {
 
-    color: #7786b9;
+    max-width: 650px;
+
+    margin:
+        25px auto
+        12px;
+
+    font-size: 16px;
+
+    font-weight: bold;
+}
+
+.shortcuts {
+
+    max-width: 650px;
+
+    margin: auto;
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, 1fr);
+
+    gap: 14px;
+}
+
+.shortcut {
+
+    padding: 20px;
+
+    border-radius: 18px;
+
+    background:
+        rgba(255,255,255,0.13);
+
+    border:
+        1px solid
+        rgba(255,255,255,0.2);
+
+    backdrop-filter:
+        blur(12px);
+
+    color: white;
+
+    text-decoration: none;
+
+    text-align: center;
+
+    font-size: 15px;
+
+    box-shadow:
+        0 8px 25px
+        rgba(0,0,0,0.15);
+}
+
+.shortcut:active {
+
+    transform:
+        scale(0.97);
+}
+
+.info {
+
+    max-width: 650px;
+
+    margin:
+        30px auto
+        0;
+
+    text-align: center;
+
+    color:
+        rgba(255,255,255,0.65);
 
     font-size: 12px;
+}
+
+@media (min-width: 600px) {
+
+    .shortcuts {
+
+        grid-template-columns:
+            repeat(4, 1fr);
+    }
 }
 
 </style>
@@ -584,157 +653,103 @@ body {
 
 <body>
 
-<div class="container">
+<div class="overlay">
 
 <div class="logo">
-N
+NEXORA
 </div>
 
-<div class="brand">
-Nexora
-</div>
-
-<div class="tagline">
-BROWSE BEYOND.
-</div>
-
-<div class="status">
-⚡ Fast &nbsp; • &nbsp;
-🛡 Secure &nbsp; • &nbsp;
-✦ Smart
+<div class="subtitle">
+Your private gateway to the web
 </div>
 
 <form
-class="search"
-action="https://www.google.com/search"
-method="get">
+    class="search"
+    onsubmit="searchGoogle(); return false;">
 
 <input
-type="text"
-name="q"
-placeholder="Search the web..."
-autocomplete="off">
+    id="searchBox"
+    type="text"
+    placeholder="Search or enter address"
+    autocomplete="off">
 
 <button type="submit">
-→
+Search
 </button>
 
 </form>
 
-<div class="section">
-Quick access
+<div class="section-title">
+Quick Access
 </div>
 
 <div class="shortcuts">
 
 <a
-class="shortcut"
-href="https://www.youtube.com">
-
-<div class="icon">
-▶
-</div>
-
-<div class="name">
-YouTube
-</div>
-
-</a>
-
-<a
-class="shortcut"
-href="https://www.google.com">
-
-<div class="icon">
-G
-</div>
-
-<div class="name">
+    class="shortcut"
+    href="https://www.google.com">
+🔎<br>
 Google
-</div>
-
 </a>
 
 <a
-class="shortcut"
-href="https://x.com">
-
-<div class="icon">
-𝕏
-</div>
-
-<div class="name">
-X
-</div>
-
+    class="shortcut"
+    href="https://www.youtube.com">
+▶<br>
+YouTube
 </a>
 
 <a
-class="shortcut"
-href="https://www.instagram.com">
-
-<div class="icon">
-◎
-</div>
-
-<div class="name">
-Instagram
-</div>
-
+    class="shortcut"
+    href="https://www.wikipedia.org">
+📚<br>
+Wikipedia
 </a>
 
 <a
-class="shortcut"
-href="https://chatgpt.com">
-
-<div class="icon">
-✦
-</div>
-
-<div class="name">
-ChatGPT
-</div>
-
-</a>
-
-<a
-class="shortcut"
-href="https://www.google.com">
-
-<div class="icon">
-+
-</div>
-
-<div class="name">
-Add
-</div>
-
+    class="shortcut"
+    href="https://www.github.com">
+💻<br>
+GitHub
 </a>
 
 </div>
 
 <div class="info">
-
-<div class="info-small">
-NEXORA BROWSER
-</div>
-
-<div class="info-large">
-Ready to explore
+Nexora Browser
+<br>
+Fast • Private • Simple
 </div>
 
 </div>
 
-<div class="footer">
-Nexora Browser • Browse Beyond.
-</div>
+<script>
 
-</div>
+function searchGoogle() {
+
+    var value =
+        document
+        .getElementById("searchBox")
+        .value
+        .trim();
+
+    if (value.length === 0) {
+        return;
+    }
+
+    var url =
+        "https://www.google.com/search?q=" +
+        encodeURIComponent(value);
+
+    window.location.href = url;
+}
+
+</script>
 
 </body>
 
 </html>
-        """.trimIndent()
+"""
 
         webView.loadDataWithBaseURL(
             "https://nexora.local/",
@@ -744,65 +759,109 @@ Nexora Browser • Browse Beyond.
             null
         )
 
-        urlBar.setText("")
+        urlBar.setText(
+            "Nexora Home"
+        )
 
-        TabManager.currentTab().url =
-            "https://nexora.local/"
+        bookmarkButton.text = "☆"
 
-        TabManager.currentTab().title =
-            "Nexora"
-
-        updateBookmarkButton()
+        updateNavigationButtons()
     }
 
-    private fun openWebsite() {
-
-        var address =
-            urlBar.text.toString().trim()
-
-        if (address.isEmpty()) {
-            return
-        }
+    private fun updateBookmarkButton(
+        url: String
+    ) {
 
         if (
-            !address.startsWith("http://") &&
-            !address.startsWith("https://")
+            BookmarkManager
+                .isBookmarked(url)
         ) {
 
-            address =
-                "https://www.google.com/search?q=" +
-                address.replace(" ", "+")
+            bookmarkButton.text = "★"
+
+        } else {
+
+            bookmarkButton.text = "☆"
+        }
+    }
+
+    private fun updateNavigationButtons() {
+
+        backButton.isEnabled =
+            webView.canGoBack()
+
+        forwardButton.isEnabled =
+            webView.canGoForward()
+    }
+
+    private fun updateTab(
+        title: String,
+        url: String
+    ) {
+
+        if (
+            TabManager.tabs.isEmpty()
+        ) {
+            TabManager.initialize()
         }
 
-        webView.loadUrl(address)
+        val current =
+            TabManager.currentTab()
 
-        TabManager.currentTab().url =
-            address
+        current.title =
+            title.ifEmpty {
+                "Nexora"
+            }
+
+        current.url = url
     }
 
-    private fun updateBookmarkButton() {
+    private fun saveCurrentTab() {
 
-        val bookmarkButton: Button =
-            findViewById(
-                R.id.bookmarkButton
-            )
+        if (
+            TabManager.tabs.isEmpty()
+        ) {
+            TabManager.initialize()
+        }
+
+        val current =
+            TabManager.currentTab()
 
         val currentUrl =
-            TabManager.currentTab().url
+            webView.url
 
-        bookmarkButton.text =
-            if (
-                BookmarkManager.isBookmarked(
-                    currentUrl
-                )
-            ) {
-                "★"
-            } else {
-                "☆"
-            }
+        if (!currentUrl.isNullOrEmpty()) {
+
+            current.url =
+                currentUrl
+
+            current.title =
+                webView.title
+                    ?: current.title
+        }
     }
 
-    @Suppress("DEPRECATION")
+    override fun onResume() {
+
+        super.onResume()
+
+        if (
+            ::webView.isInitialized
+        ) {
+
+            val currentUrl =
+                webView.url
+
+            if (
+                currentUrl ==
+                "https://nexora.local/"
+            ) {
+
+                loadNexoraHome()
+            }
+        }
+    }
+
     override fun onBackPressed() {
 
         if (webView.canGoBack()) {
@@ -813,5 +872,13 @@ Nexora Browser • Browse Beyond.
 
             super.onBackPressed()
         }
+    }
+
+    override fun onDestroy() {
+
+        webView.stopLoading()
+        webView.destroy()
+
+        super.onDestroy()
     }
 }
