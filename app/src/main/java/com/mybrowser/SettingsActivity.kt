@@ -2,6 +2,7 @@ package com.mybrowser
 
 import android.app.Activity
 import android.content.Intent
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.widget.Button
@@ -75,18 +76,10 @@ class SettingsActivity : Activity() {
             )
 
         when (savedBackground) {
-
-            "midnight" ->
-                midnight.isChecked = true
-
-            "ocean" ->
-                ocean.isChecked = true
-
-            "purple" ->
-                purple.isChecked = true
-
-            else ->
-                cosmic.isChecked = true
+            "midnight" -> midnight.isChecked = true
+            "ocean" -> ocean.isChecked = true
+            "purple" -> purple.isChecked = true
+            else -> cosmic.isChecked = true
         }
 
         chooseWallpaperButton.setOnClickListener {
@@ -133,8 +126,7 @@ class SettingsActivity : Activity() {
         saveButton.setOnClickListener {
 
             val selectedId =
-                backgroundGroup
-                    .checkedRadioButtonId
+                backgroundGroup.checkedRadioButtonId
 
             val background =
                 when (selectedId) {
@@ -159,6 +151,12 @@ class SettingsActivity : Activity() {
                     background
                 )
                 .apply()
+
+            Toast.makeText(
+                this,
+                "Settings saved",
+                Toast.LENGTH_SHORT
+            ).show()
 
             finish()
         }
@@ -192,51 +190,55 @@ class SettingsActivity : Activity() {
 
         try {
 
-            contentResolver
-                .openInputStream(selectedUri)
-                .use { input ->
-
-                    if (input == null) {
-                        throw Exception(
-                            "Unable to open image"
-                        )
-                    }
-
-                    val destination =
-                        File(
-                            filesDir,
-                            WALLPAPER_FILE
-                        )
-
-                    FileOutputStream(
-                        destination
-                    ).use { output ->
-
-                        input.copyTo(output)
-                    }
-                }
-
-            val testBitmap =
-                BitmapFactory.decodeFile(
-                    File(
-                        filesDir,
-                        WALLPAPER_FILE
-                    ).absolutePath
+            val input =
+                contentResolver.openInputStream(
+                    selectedUri
                 )
 
-            if (testBitmap == null) {
+            if (input == null) {
+                throw Exception(
+                    "Unable to open image"
+                )
+            }
 
-                File(
-                    filesDir,
-                    WALLPAPER_FILE
-                ).delete()
+            val bitmap =
+                BitmapFactory.decodeStream(input)
 
+            input.close()
+
+            if (bitmap == null) {
                 throw Exception(
                     "Invalid image"
                 )
             }
 
-            testBitmap.recycle()
+            val destination =
+                File(
+                    filesDir,
+                    WALLPAPER_FILE
+                )
+
+            FileOutputStream(
+                destination
+            ).use { output ->
+
+                bitmap.compress(
+                    Bitmap.CompressFormat.JPEG,
+                    90,
+                    output
+                )
+            }
+
+            bitmap.recycle()
+
+            if (
+                !destination.exists() ||
+                destination.length() == 0L
+            ) {
+                throw Exception(
+                    "Wallpaper was not saved"
+                )
+            }
 
             getSharedPreferences(
                 "nexora_settings",
