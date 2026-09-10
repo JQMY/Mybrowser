@@ -2,11 +2,14 @@ package com.mybrowser
 
 import android.app.Activity
 import android.content.Intent
-import android.net.Uri
+import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.widget.Button
 import android.widget.RadioButton
 import android.widget.RadioGroup
+import android.widget.Toast
+import java.io.File
+import java.io.FileOutputStream
 
 class SettingsActivity : Activity() {
 
@@ -15,6 +18,7 @@ class SettingsActivity : Activity() {
 
     companion object {
         private const val PICK_WALLPAPER = 1001
+        private const val WALLPAPER_FILE = "nexora_wallpaper.jpg"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -72,29 +76,23 @@ class SettingsActivity : Activity() {
 
         when (savedBackground) {
 
-            "midnight" -> {
+            "midnight" ->
                 midnight.isChecked = true
-            }
 
-            "ocean" -> {
+            "ocean" ->
                 ocean.isChecked = true
-            }
 
-            "purple" -> {
+            "purple" ->
                 purple.isChecked = true
-            }
 
-            else -> {
+            else ->
                 cosmic.isChecked = true
-            }
         }
 
-        // Choose a custom wallpaper
         chooseWallpaperButton.setOnClickListener {
 
-            val intent = Intent(
-                Intent.ACTION_OPEN_DOCUMENT
-            )
+            val intent =
+                Intent(Intent.ACTION_OPEN_DOCUMENT)
 
             intent.type = "image/*"
 
@@ -108,20 +106,35 @@ class SettingsActivity : Activity() {
             )
         }
 
-        // Remove custom wallpaper
         removeWallpaperButton.setOnClickListener {
+
+            val wallpaperFile =
+                File(
+                    filesDir,
+                    WALLPAPER_FILE
+                )
+
+            if (wallpaperFile.exists()) {
+                wallpaperFile.delete()
+            }
 
             preferences
                 .edit()
-                .remove("wallpaperUri")
+                .remove("wallpaperFile")
                 .apply()
+
+            Toast.makeText(
+                this,
+                "Custom wallpaper removed",
+                Toast.LENGTH_SHORT
+            ).show()
         }
 
-        // Save appearance settings
         saveButton.setOnClickListener {
 
             val selectedId =
-                backgroundGroup.checkedRadioButtonId
+                backgroundGroup
+                    .checkedRadioButtonId
 
             val background =
                 when (selectedId) {
@@ -164,38 +177,91 @@ class SettingsActivity : Activity() {
         )
 
         if (
-            requestCode == PICK_WALLPAPER &&
-            resultCode == RESULT_OK
+            requestCode != PICK_WALLPAPER ||
+            resultCode != RESULT_OK
         ) {
+            return
+        }
 
-            val wallpaperUri: Uri? =
-                data?.data
+        val selectedUri =
+            data?.data
 
-            if (wallpaperUri != null) {
+        if (selectedUri == null) {
+            return
+        }
 
-                try {
+        try {
 
-                    contentResolver.takePersistableUriPermission(
-                        wallpaperUri,
-                        Intent.FLAG_GRANT_READ_URI_PERMISSION
-                    )
+            contentResolver
+                .openInputStream(selectedUri)
+                .use { input ->
 
-                } catch (_: Exception) {
-                    // Some providers don't support
-                    // persistable permissions.
+                    if (input == null) {
+                        throw Exception(
+                            "Unable to open image"
+                        )
+                    }
+
+                    val destination =
+                        File(
+                            filesDir,
+                            WALLPAPER_FILE
+                        )
+
+                    FileOutputStream(
+                        destination
+                    ).use { output ->
+
+                        input.copyTo(output)
+                    }
                 }
 
-                getSharedPreferences(
-                    "nexora_settings",
-                    MODE_PRIVATE
+            val testBitmap =
+                BitmapFactory.decodeFile(
+                    File(
+                        filesDir,
+                        WALLPAPER_FILE
+                    ).absolutePath
                 )
-                    .edit()
-                    .putString(
-                        "wallpaperUri",
-                        wallpaperUri.toString()
-                    )
-                    .apply()
+
+            if (testBitmap == null) {
+
+                File(
+                    filesDir,
+                    WALLPAPER_FILE
+                ).delete()
+
+                throw Exception(
+                    "Invalid image"
+                )
             }
+
+            testBitmap.recycle()
+
+            getSharedPreferences(
+                "nexora_settings",
+                MODE_PRIVATE
+            )
+                .edit()
+                .putString(
+                    "wallpaperFile",
+                    WALLPAPER_FILE
+                )
+                .apply()
+
+            Toast.makeText(
+                this,
+                "Wallpaper selected",
+                Toast.LENGTH_SHORT
+            ).show()
+
+        } catch (e: Exception) {
+
+            Toast.makeText(
+                this,
+                "Could not use this image",
+                Toast.LENGTH_LONG
+            ).show()
         }
     }
 }
